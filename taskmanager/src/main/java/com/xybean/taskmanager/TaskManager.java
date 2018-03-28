@@ -11,15 +11,16 @@ public class TaskManager<K, R> {
 
     private TaskHandler<K, R> handler;
     private HandlerThread thread;
-    private int poolSize = 0;
+
+    private IExecutorFactory executorFactory;
 
     public TaskManager(String name) {
-        this(name, 0);
+        this(name, new IExecutorFactory.DefaultFixedExecutor());
     }
 
-    public TaskManager(String name, int poolSize) {
+    public TaskManager(String name, IExecutorFactory factory) {
         thread = new HandlerThread(name);
-        this.poolSize = poolSize;
+        executorFactory = factory;
     }
 
     public void execute(Task<K, R> task) {
@@ -52,11 +53,7 @@ public class TaskManager<K, R> {
 
     public void start() {
         thread.start();
-        if (poolSize > 0) {
-            handler = new TaskHandler<>(thread.getLooper(), poolSize);
-        } else {
-            handler = new TaskHandler<>(thread.getLooper());
-        }
+        handler = new TaskHandler<>(thread.getLooper(), executorFactory.getExecutorService());
         handler.start();
     }
 

@@ -4,8 +4,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -21,16 +21,13 @@ final class TaskHandler<K, R> extends Handler {
     private static final int MSG_UPDATE_FAILED = 4;
     private static final int MSG_UPDATE_CANCELED = 5;
 
-    private static final int CPU_COUNT = Runtime.getRuntime().availableProcessors();
-    private static final int CORE_POOL_SIZE = CPU_COUNT;
-
     private volatile boolean running;
 
     private final LinkedBlockingQueue<Task<K, R>> waiting = new LinkedBlockingQueue<>();
     private final LinkedBlockingQueue<Task<K, R>> executing = new LinkedBlockingQueue<>();
     private final LinkedBlockingQueue<Task<K, R>> finished = new LinkedBlockingQueue<>();
 
-    private ExecutorService executorService;
+    private Executor executor;
 
     private TaskExecuteInternalListener<K, R> listener = new TaskExecuteInternalListener<K, R>() {
 
@@ -67,17 +64,9 @@ final class TaskHandler<K, R> extends Handler {
         }
     };
 
-    TaskHandler(Looper looper) {
-        this(looper, CORE_POOL_SIZE);
-    }
-
-    TaskHandler(Looper looper, int poolSize) {
+    TaskHandler(Looper looper, Executor executor) {
         super(looper);
-        if (poolSize == 1) {
-            executorService = Executors.newSingleThreadExecutor();
-        } else {
-            executorService = Executors.newFixedThreadPool(poolSize);
-        }
+        this.executor = executor;
     }
 
     Task<K, R> find(K key) {
@@ -126,7 +115,9 @@ final class TaskHandler<K, R> extends Handler {
 
     void shutdown() {
         running = false;
-        executorService.shutdown();
+        if (executor instanceof ExecutorService) {
+            ((ExecutorService) executor).shutdown();
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -141,7 +132,7 @@ final class TaskHandler<K, R> extends Handler {
                 waiting.add(task);
                 task.bindInternalListener(listener);
                 task.onWait();
-                executorService.execute(task);
+                executor.execute(task);
                 break;
             }
             case MSG_CANCEL: {

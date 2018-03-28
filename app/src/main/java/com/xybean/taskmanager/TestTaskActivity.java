@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.xybean.taskmanager.test.CustomExecutorFactory;
 import com.xybean.taskmanager.test.CustomTask;
 import com.xybean.taskmanager.test.UpdateListener;
 
@@ -108,7 +109,7 @@ public class TestTaskActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_test_task);
 
-        taskManager = new TaskManager<>("TaskTest", 3);
+        taskManager = new TaskManager<>("TaskTest", new CustomExecutorFactory(3));
 
         recyclerView = findViewById(R.id.recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
