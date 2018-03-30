@@ -3,7 +3,10 @@ package com.xybean.taskmanager;
 import android.support.annotation.CallSuper;
 
 /**
- * Author @xybean on 2018/3/21.
+ * Author @xybean on 2018/3/21.<br/>
+ *
+ * @param <K> key for Task, same as identify
+ * @param <R> return value for task
  */
 
 public abstract class Task<K, R> implements Runnable {

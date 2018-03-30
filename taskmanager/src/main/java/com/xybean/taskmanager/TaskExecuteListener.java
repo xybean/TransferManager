@@ -1,7 +1,8 @@
 package com.xybean.taskmanager;
 
 /**
- * Author @xybean on 2018/3/21.
+ * Author @xybean on 2018/3/21.<br/>
+ * callback for task's state changing in task queue
  */
 
 public interface TaskExecuteListener<K, V> {

@@ -9,7 +9,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * Author @xybean on 2018/3/21.
+ * Author @xybean on 2018/3/21.<br/>
+ * handle tasks for executor.<br/>
+ * To avoid client thread (UI thread) contending with executor.
  */
 
 final class TaskHandler<K, R> extends Handler {
@@ -23,6 +25,7 @@ final class TaskHandler<K, R> extends Handler {
 
     private volatile boolean running;
 
+    // backup for tasks running in executor
     private final LinkedBlockingQueue<Task<K, R>> waiting = new LinkedBlockingQueue<>();
     private final LinkedBlockingQueue<Task<K, R>> executing = new LinkedBlockingQueue<>();
     private final LinkedBlockingQueue<Task<K, R>> finished = new LinkedBlockingQueue<>();

@@ -7,7 +7,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * Author @xybean on 2018/3/27.
+ * Author @xybean on 2018/3/27.<br/>
+ * wrapper for FutureTask
  */
 
 public abstract class FutureCallTask<K, R> extends Task<K, R> implements Callable<R> {

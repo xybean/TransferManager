@@ -4,7 +4,9 @@ import android.os.HandlerThread;
 import android.os.Message;
 
 /**
- * Author @xybean on 2018/3/22.
+ * Author @xybean on 2018/3/22.<br/>
+ * Interface for client.<br/>
+ * you could also extends this class and add logic for managing tasks
  */
 
 public class TaskManager<K, R> {
