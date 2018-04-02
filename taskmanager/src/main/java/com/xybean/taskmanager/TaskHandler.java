@@ -32,6 +32,8 @@ final class TaskHandler<K, R> extends Handler {
 
     private Executor executor;
 
+    private TaskQueueListener queueListener;
+
     private TaskExecuteInternalListener<K, R> listener = new TaskExecuteInternalListener<K, R>() {
 
         @Override
@@ -70,6 +72,10 @@ final class TaskHandler<K, R> extends Handler {
     TaskHandler(Looper looper, Executor executor) {
         super(looper);
         this.executor = executor;
+    }
+
+    void setOnTaskQueueListener(TaskQueueListener queueListener) {
+        this.queueListener = queueListener;
     }
 
     Task<K, R> find(K key) {
@@ -132,9 +138,15 @@ final class TaskHandler<K, R> extends Handler {
         switch (msg.what) {
             case MSG_SUBMIT: {
                 Task<K, R> task = (Task<K, R>) msg.obj;
+                int preSize = waiting.size();
                 waiting.add(task);
+                if (queueListener != null) {
+                    queueListener.onExecutingQueueUpdate(preSize, preSize + 1);
+                }
                 task.bindInternalListener(listener);
-                task.onWait();
+                if (task.listener != null) {
+                    task.listener.onWait(task.getKey());
+                }
                 executor.execute(task);
                 break;
             }
@@ -164,8 +176,14 @@ final class TaskHandler<K, R> extends Handler {
             }
             case MSG_UPDATE_START: {
                 Task<K, R> task = (Task<K, R>) msg.obj;
+                int waitingPre = waiting.size();
+                int executingPre = executing.size();
                 waiting.remove(task);
                 executing.add(task);
+                if (queueListener != null) {
+                    queueListener.onWaitingQueueUpdate(waitingPre, waitingPre - 1);
+                    queueListener.onExecutingQueueUpdate(executingPre, executingPre + 1);
+                }
                 if (task.listener != null) {
                     task.listener.onStart(task.getKey());
                 }
@@ -175,8 +193,14 @@ final class TaskHandler<K, R> extends Handler {
             case MSG_UPDATE_SUCCESS: {
                 Task<K, R> task = (Task<K, R>) ((Object[]) msg.obj)[0];
                 R result = (R) ((Object[]) msg.obj)[1];
+                int executingPre = executing.size();
+                int finishedPre = finished.size();
                 executing.remove(task);
                 finished.add(task);
+                if (queueListener != null) {
+                    queueListener.onExecutingQueueUpdate(executingPre, executingPre - 1);
+                    queueListener.onFinishQueueUpdate(finishedPre, finishedPre + 1);
+                }
                 if (task.listener != null) {
                     task.listener.onSuccess(task.getKey(), result);
                 }
@@ -185,8 +209,14 @@ final class TaskHandler<K, R> extends Handler {
             case MSG_UPDATE_FAILED: {
                 Task<K, R> task = (Task<K, R>) ((Object[]) msg.obj)[0];
                 Throwable throwable = (Throwable) ((Object[]) msg.obj)[1];
+                int executingPre = executing.size();
+                int finishedPre = finished.size();
                 executing.remove(task);
                 finished.add(task);
+                if (queueListener != null) {
+                    queueListener.onExecutingQueueUpdate(executingPre, executingPre - 1);
+                    queueListener.onFinishQueueUpdate(finishedPre, finishedPre + 1);
+                }
                 if (task.listener != null) {
                     task.listener.onFailed(task.getKey(), throwable);
                 }
@@ -194,10 +224,29 @@ final class TaskHandler<K, R> extends Handler {
             }
             case MSG_UPDATE_CANCELED: {
                 Task<K, R> task = (Task<K, R>) msg.obj;
-                if (!waiting.remove(task)) {
-                    executing.remove(task);
+                int waitingPre = waiting.size();
+                int executingPre = executing.size();
+                int finishedPre = finished.size();
+                boolean removedFromWaiting = waiting.remove(task);
+                boolean removedFromExecuting = false;
+                if (!removedFromWaiting) {
+                    removedFromExecuting = executing.remove(task);
                 }
-                finished.add(task);
+                if (removedFromWaiting || removedFromExecuting) {
+                    finished.add(task);
+                }
+                if (removedFromWaiting) {
+                    if (queueListener != null) {
+                        queueListener.onWaitingQueueUpdate(waitingPre, waitingPre - 1);
+                        queueListener.onFinishQueueUpdate(finishedPre, finishedPre + 1);
+                    }
+                }
+                if (removedFromExecuting) {
+                    if (queueListener != null) {
+                        queueListener.onExecutingQueueUpdate(executingPre, executingPre - 1);
+                        queueListener.onFinishQueueUpdate(finishedPre, finishedPre + 1);
+                    }
+                }
                 if (task.listener != null) {
                     task.listener.onCanceled(task.getKey());
                 }

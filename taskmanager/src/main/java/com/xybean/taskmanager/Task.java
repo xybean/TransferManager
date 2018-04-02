@@ -100,12 +100,6 @@ public abstract class Task<K, R> implements Runnable {
         return state == COMPLETED;
     }
 
-    void onWait() {
-        if (listener != null) {
-            listener.onWait(key);
-        }
-    }
-
     /**
      * override this method to implement logic for canceling task if necessary,<br/>
      * always using with isCanceled()

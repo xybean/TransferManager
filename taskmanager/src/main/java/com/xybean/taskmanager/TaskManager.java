@@ -6,7 +6,7 @@ import android.os.Message;
 /**
  * Author @xybean on 2018/3/22.<br/>
  * Interface for client.<br/>
- * you could also extends this class and add logic for managing tasks
+ * you could also extends this class and add logic for managing task
  */
 
 public class TaskManager<K, R> {
@@ -17,7 +17,7 @@ public class TaskManager<K, R> {
     private IExecutorFactory executorFactory;
 
     public TaskManager(String name) {
-        this(name, new IExecutorFactory.DefaultFixedExecutor());
+        this(name, IExecutorFactory.DefaultFixedExecutor.INSTANCE);
     }
 
     public TaskManager(String name, IExecutorFactory factory) {
@@ -39,6 +39,10 @@ public class TaskManager<K, R> {
         }
         Message msg = handler.obtainMessage(TaskHandler.MSG_CANCEL, key);
         handler.sendMessage(msg);
+    }
+
+    public void setOnTaskQueueListener(TaskQueueListener listener) {
+        handler.setOnTaskQueueListener(listener);
     }
 
     public Task<K, R> find(K key) {
