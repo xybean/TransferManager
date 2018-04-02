@@ -118,6 +118,18 @@ final class TaskHandler<K, R> extends Handler {
         return false;
     }
 
+    int getWaitingQueueSize() {
+        return waiting.size();
+    }
+
+    int getExecutingSize() {
+        return executing.size();
+    }
+
+    int getFinishedSize() {
+        return finished.size();
+    }
+
     void start() {
         running = true;
     }
@@ -141,7 +153,7 @@ final class TaskHandler<K, R> extends Handler {
                 int preSize = waiting.size();
                 waiting.add(task);
                 if (queueListener != null) {
-                    queueListener.onExecutingQueueUpdate(preSize, preSize + 1);
+                    queueListener.onWaitingQueueUpdate(preSize, preSize + 1);
                 }
                 task.bindInternalListener(listener);
                 if (task.listener != null) {
@@ -199,7 +211,7 @@ final class TaskHandler<K, R> extends Handler {
                 finished.add(task);
                 if (queueListener != null) {
                     queueListener.onExecutingQueueUpdate(executingPre, executingPre - 1);
-                    queueListener.onFinishQueueUpdate(finishedPre, finishedPre + 1);
+                    queueListener.onFinishedQueueUpdate(finishedPre, finishedPre + 1);
                 }
                 if (task.listener != null) {
                     task.listener.onSuccess(task.getKey(), result);
@@ -215,7 +227,7 @@ final class TaskHandler<K, R> extends Handler {
                 finished.add(task);
                 if (queueListener != null) {
                     queueListener.onExecutingQueueUpdate(executingPre, executingPre - 1);
-                    queueListener.onFinishQueueUpdate(finishedPre, finishedPre + 1);
+                    queueListener.onFinishedQueueUpdate(finishedPre, finishedPre + 1);
                 }
                 if (task.listener != null) {
                     task.listener.onFailed(task.getKey(), throwable);
@@ -238,13 +250,13 @@ final class TaskHandler<K, R> extends Handler {
                 if (removedFromWaiting) {
                     if (queueListener != null) {
                         queueListener.onWaitingQueueUpdate(waitingPre, waitingPre - 1);
-                        queueListener.onFinishQueueUpdate(finishedPre, finishedPre + 1);
+                        queueListener.onFinishedQueueUpdate(finishedPre, finishedPre + 1);
                     }
                 }
                 if (removedFromExecuting) {
                     if (queueListener != null) {
                         queueListener.onExecutingQueueUpdate(executingPre, executingPre - 1);
-                        queueListener.onFinishQueueUpdate(finishedPre, finishedPre + 1);
+                        queueListener.onFinishedQueueUpdate(finishedPre, finishedPre + 1);
                     }
                 }
                 if (task.listener != null) {

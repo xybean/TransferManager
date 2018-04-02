@@ -16,6 +16,8 @@ public class TaskManager<K, R> {
 
     private IExecutorFactory executorFactory;
 
+    private TaskQueueListener queueListener;
+
     public TaskManager(String name) {
         this(name, IExecutorFactory.DefaultFixedExecutor.INSTANCE);
     }
@@ -42,7 +44,7 @@ public class TaskManager<K, R> {
     }
 
     public void setOnTaskQueueListener(TaskQueueListener listener) {
-        handler.setOnTaskQueueListener(listener);
+        queueListener = listener;
     }
 
     public Task<K, R> find(K key) {
@@ -57,9 +59,22 @@ public class TaskManager<K, R> {
         return handler.isInExecuting(key);
     }
 
+    public int getWaitingSize() {
+        return handler.getWaitingQueueSize();
+    }
+
+    public int getExecutingSize() {
+        return handler.getExecutingSize();
+    }
+
+    public int getFinishedSize() {
+        return handler.getFinishedSize();
+    }
+
     public void start() {
         thread.start();
         handler = new TaskHandler<>(thread.getLooper(), executorFactory.getExecutorService());
+        handler.setOnTaskQueueListener(queueListener);
         handler.start();
     }
 

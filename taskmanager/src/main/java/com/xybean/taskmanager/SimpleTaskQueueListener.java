@@ -15,7 +15,7 @@ public class SimpleTaskQueueListener implements TaskQueueListener {
     }
 
     @Override
-    public void onFinishQueueUpdate(int preSize, int currSize) {
+    public void onFinishedQueueUpdate(int preSize, int currSize) {
 
     }
 }

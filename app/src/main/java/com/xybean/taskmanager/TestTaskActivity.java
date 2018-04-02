@@ -21,6 +21,9 @@ import java.util.List;
 public class TestTaskActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
+    private TextView tvWaiting;
+    private TextView tvExecuting;
+    private TextView tvFinished;
 
     private TaskManager<Long, String> taskManager;
 
@@ -104,12 +107,48 @@ public class TestTaskActivity extends AppCompatActivity {
         }
     };
 
+    private TaskQueueListener queueListener = new TaskQueueListener() {
+        @Override
+        public void onWaitingQueueUpdate(final int preSize, final int currSize) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    tvWaiting.setText("pre: " + preSize + "  curr : " + currSize);
+                }
+            });
+        }
+
+        @Override
+        public void onExecutingQueueUpdate(final int preSize, final int currSize) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    tvExecuting.setText("pre: " + preSize + "  curr : " + currSize);
+                }
+            });
+        }
+
+        @Override
+        public void onFinishedQueueUpdate(final int preSize, final int currSize) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    tvFinished.setText("pre: " + preSize + "  curr : " + currSize);
+                }
+            });
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_test_task);
 
         taskManager = new TaskManager<>("TaskTest", new CustomExecutorFactory(3));
+
+        tvWaiting = findViewById(R.id.tv_waiting);
+        tvExecuting = findViewById(R.id.tv_executing);
+        tvFinished = findViewById(R.id.tv_finished);
 
         recyclerView = findViewById(R.id.recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -148,7 +187,10 @@ public class TestTaskActivity extends AppCompatActivity {
             }
         });
 
+        taskManager.setOnTaskQueueListener(queueListener);
+
         taskManager.start();
+
     }
 
     @Override
