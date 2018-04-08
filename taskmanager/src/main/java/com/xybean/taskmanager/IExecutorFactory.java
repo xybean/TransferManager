@@ -21,7 +21,7 @@ public interface IExecutorFactory {
      */
     class DefaultFixedExecutor implements IExecutorFactory {
 
-        public static DefaultFixedExecutor INSTANCE = new DefaultFixedExecutor();
+        public static final DefaultFixedExecutor INSTANCE = new DefaultFixedExecutor();
 
         private static final int CPU_COUNT = Runtime.getRuntime().availableProcessors();
         private static final int CORE_POOL_SIZE = CPU_COUNT;
@@ -39,7 +39,7 @@ public interface IExecutorFactory {
 
     class DefaultSingleExecutor implements IExecutorFactory {
 
-        public static DefaultSingleExecutor INSTANCE = new DefaultSingleExecutor();
+        public static final DefaultSingleExecutor INSTANCE = new DefaultSingleExecutor();
 
         private static final ExecutorService SINGLE_EXECUTOR = Executors.newSingleThreadExecutor();
 

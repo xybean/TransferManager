@@ -35,8 +35,11 @@ public abstract class Task<K, R> implements Runnable {
         this.listener = listener;
     }
 
+    /**
+     * implement execute() instead of run()
+     */
     @Override
-    public void run() {
+    public final void run() {
         if (canceled) {
             onCanceled();
             return;
@@ -74,6 +77,15 @@ public abstract class Task<K, R> implements Runnable {
         }
     }
 
+    /**
+     * implementation for executing logic
+     *
+     * @return result of task
+     * @throws Exception the exception will be caught by {@link Task#run()},<br/>
+     *                   if you catch Exception in execute(),
+     *                   {@link TaskExecuteListener#onFailed(Object, Throwable)} may not be called.<br/>
+     *                   If you want to make the task cancelable, one of the way is throwing {@link TaskCanceledException}
+     */
     protected abstract R execute() throws Exception;
 
     public K getKey() {

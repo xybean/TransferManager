@@ -34,11 +34,6 @@ public abstract class FutureCallTask<K, R> extends Task<K, R> implements Callabl
     }
 
     @Override
-    public final void run() {
-        super.run();
-    }
-
-    @Override
     public void cancel() {
         super.cancel();
         internalTask.cancel(false);
