@@ -46,9 +46,6 @@ public abstract class Task<K, R> implements Runnable {
         }
         state = EXECUTING;
         internalListener.onStart(this);
-        if (listener != null) {
-            listener.onStart(key);
-        }
         try {
             R r = execute();
             if (isCanceled()) {
@@ -59,9 +56,6 @@ public abstract class Task<K, R> implements Runnable {
             // can't be canceled anymore, so reset the value
             canceled = false;
             internalListener.onSuccess(this, r);
-            if (listener != null) {
-                listener.onSuccess(key, r);
-            }
         } catch (TaskCanceledException e) {
             onCanceled();
         } catch (InterruptedException e) {
@@ -71,9 +65,6 @@ public abstract class Task<K, R> implements Runnable {
         } catch (Exception e) {
             state = FAILED;
             internalListener.onFailed(this, e);
-            if (listener != null) {
-                listener.onFailed(key, e);
-            }
         }
     }
 
@@ -125,9 +116,6 @@ public abstract class Task<K, R> implements Runnable {
         canceled = true;
         state = CANCELED;
         internalListener.onCanceled(this);
-        if (listener != null) {
-            listener.onCanceled(key);
-        }
     }
 
     void bindInternalListener(TaskExecuteInternalListener<K, R> internalListener) {

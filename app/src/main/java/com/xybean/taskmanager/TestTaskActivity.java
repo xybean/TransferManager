@@ -56,6 +56,7 @@ public class TestTaskActivity extends AppCompatActivity {
 
         @Override
         public void onSuccess(final Long key, final String result) {
+            System.out.println("============>>>>>>xyb helllllo");
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
