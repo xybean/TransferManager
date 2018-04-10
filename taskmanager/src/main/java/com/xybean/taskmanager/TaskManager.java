@@ -19,7 +19,7 @@ public class TaskManager<K, R> {
     private TaskQueueListener queueListener;
 
     public TaskManager(String name) {
-        this(name, IExecutorFactory.DefaultFixedExecutor.INSTANCE);
+        this(name, IExecutorFactory.DefaultIOExecutor.INSTANCE);
     }
 
     public TaskManager(String name, IExecutorFactory factory) {
