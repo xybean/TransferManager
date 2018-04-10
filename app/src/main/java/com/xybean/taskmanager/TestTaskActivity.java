@@ -189,8 +189,6 @@ public class TestTaskActivity extends AppCompatActivity {
 
         taskManager.setOnTaskQueueListener(queueListener);
 
-        taskManager.start();
-
     }
 
     @Override
