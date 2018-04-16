@@ -10,5 +10,5 @@ public interface TaskQueueListener {
 
     void onExecutingQueueUpdate(int preSize, int currSize);
 
-    void onFinishedQueueUpdate(int preSize, int currSize);
+    void onFailedQueueUpdate(int preSize, int currSize);
 }

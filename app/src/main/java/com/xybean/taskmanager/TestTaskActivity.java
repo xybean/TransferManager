@@ -23,7 +23,7 @@ public class TestTaskActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private TextView tvWaiting;
     private TextView tvExecuting;
-    private TextView tvFinished;
+    private TextView tvFailed;
 
     private TaskManager<Long, String> taskManager;
 
@@ -130,11 +130,11 @@ public class TestTaskActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onFinishedQueueUpdate(final int preSize, final int currSize) {
+        public void onFailedQueueUpdate(final int preSize, final int currSize) {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    tvFinished.setText("pre: " + preSize + "  curr : " + currSize);
+                    tvFailed.setText("pre: " + preSize + "  curr : " + currSize);
                 }
             });
         }
@@ -149,7 +149,7 @@ public class TestTaskActivity extends AppCompatActivity {
 
         tvWaiting = findViewById(R.id.tv_waiting);
         tvExecuting = findViewById(R.id.tv_executing);
-        tvFinished = findViewById(R.id.tv_finished);
+        tvFailed = findViewById(R.id.tv_failed);
 
         recyclerView = findViewById(R.id.recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));

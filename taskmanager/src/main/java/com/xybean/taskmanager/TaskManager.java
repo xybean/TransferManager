@@ -68,8 +68,8 @@ public class TaskManager<K, R> {
         return handler.getExecutingSize();
     }
 
-    public int getFinishedSize() {
-        return handler.getFinishedSize();
+    public int getFailedSize() {
+        return handler.getFailedSize();
     }
 
     public void shutdown() {

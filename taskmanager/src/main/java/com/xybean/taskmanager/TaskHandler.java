@@ -28,7 +28,7 @@ final class TaskHandler<K, R> extends Handler {
     // backup for tasks running in executor
     private final LinkedBlockingQueue<Task<K, R>> waiting = new LinkedBlockingQueue<>();
     private final LinkedBlockingQueue<Task<K, R>> executing = new LinkedBlockingQueue<>();
-    private final LinkedBlockingQueue<Task<K, R>> finished = new LinkedBlockingQueue<>();
+    private final LinkedBlockingQueue<Task<K, R>> failed = new LinkedBlockingQueue<>();
 
     private Executor executor;
 
@@ -126,8 +126,8 @@ final class TaskHandler<K, R> extends Handler {
         return executing.size();
     }
 
-    int getFinishedSize() {
-        return finished.size();
+    int getFailedSize() {
+        return failed.size();
     }
 
     void start() {
@@ -206,12 +206,9 @@ final class TaskHandler<K, R> extends Handler {
                 Task<K, R> task = (Task<K, R>) ((Object[]) msg.obj)[0];
                 R result = (R) ((Object[]) msg.obj)[1];
                 int executingPre = executing.size();
-                int finishedPre = finished.size();
                 executing.remove(task);
-                finished.add(task);
                 if (queueListener != null) {
                     queueListener.onExecutingQueueUpdate(executingPre, executingPre - 1);
-                    queueListener.onFinishedQueueUpdate(finishedPre, finishedPre + 1);
                 }
                 if (task.listener != null) {
                     task.listener.onSuccess(task.getKey(), result);
@@ -222,12 +219,12 @@ final class TaskHandler<K, R> extends Handler {
                 Task<K, R> task = (Task<K, R>) ((Object[]) msg.obj)[0];
                 Throwable throwable = (Throwable) ((Object[]) msg.obj)[1];
                 int executingPre = executing.size();
-                int finishedPre = finished.size();
+                int failedPre = failed.size();
                 executing.remove(task);
-                finished.add(task);
+                failed.add(task);
                 if (queueListener != null) {
                     queueListener.onExecutingQueueUpdate(executingPre, executingPre - 1);
-                    queueListener.onFinishedQueueUpdate(finishedPre, finishedPre + 1);
+                    queueListener.onFailedQueueUpdate(failedPre, failedPre + 1);
                 }
                 if (task.listener != null) {
                     task.listener.onFailed(task.getKey(), throwable);
@@ -238,25 +235,20 @@ final class TaskHandler<K, R> extends Handler {
                 Task<K, R> task = (Task<K, R>) msg.obj;
                 int waitingPre = waiting.size();
                 int executingPre = executing.size();
-                int finishedPre = finished.size();
                 boolean removedFromWaiting = waiting.remove(task);
                 boolean removedFromExecuting = false;
                 if (!removedFromWaiting) {
                     removedFromExecuting = executing.remove(task);
                 }
-                if (removedFromWaiting || removedFromExecuting) {
-                    finished.add(task);
-                }
+
                 if (removedFromWaiting) {
                     if (queueListener != null) {
                         queueListener.onWaitingQueueUpdate(waitingPre, waitingPre - 1);
-                        queueListener.onFinishedQueueUpdate(finishedPre, finishedPre + 1);
                     }
                 }
                 if (removedFromExecuting) {
                     if (queueListener != null) {
                         queueListener.onExecutingQueueUpdate(executingPre, executingPre - 1);
-                        queueListener.onFinishedQueueUpdate(finishedPre, finishedPre + 1);
                     }
                 }
                 if (task.listener != null) {
