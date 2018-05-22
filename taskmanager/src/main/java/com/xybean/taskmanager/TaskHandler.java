@@ -16,8 +16,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 final class TaskHandler<K, R> extends Handler {
 
-    static final int MSG_SUBMIT = 0;
-    static final int MSG_CANCEL = 1;
+    private static final int OFFSET = 100;
+    static final int MSG_SUBMIT = OFFSET + 1;
+    static final int MSG_CANCEL = OFFSET + 2;
+    static final int MSG_CANCEL_ALL = OFFSET + 3;
+
     private static final int MSG_UPDATE_START = 2;
     private static final int MSG_UPDATE_SUCCESS = 3;
     private static final int MSG_UPDATE_FAILED = 4;
@@ -253,6 +256,19 @@ final class TaskHandler<K, R> extends Handler {
                 }
                 if (task.listener != null) {
                     task.listener.onCanceled(task.getKey());
+                }
+                break;
+            }
+            case MSG_CANCEL_ALL: {
+                synchronized (waiting) {
+                    for (Task<K, R> task : waiting) {
+                        task.onCanceled();
+                    }
+                }
+                synchronized (executing) {
+                    for (Task<K, R> task : executing) {
+                        task.cancel();
+                    }
                 }
                 break;
             }

@@ -188,6 +188,13 @@ public class TestTaskActivity extends AppCompatActivity {
             }
         });
 
+        findViewById(R.id.btn_cancel_all).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                taskManager.cancelAll();
+            }
+        });
+
         taskManager.setOnTaskQueueListener(queueListener);
 
     }

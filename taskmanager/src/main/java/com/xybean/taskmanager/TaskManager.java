@@ -29,18 +29,17 @@ public class TaskManager<K, R> {
     }
 
     public void execute(Task<K, R> task) {
-        if (handler == null) {
-            throw new IllegalStateException("you should call TaskManager.start() first");
-        }
         Message msg = handler.obtainMessage(TaskHandler.MSG_SUBMIT, task);
         handler.sendMessage(msg);
     }
 
     public void cancel(K key) {
-        if (handler == null) {
-            throw new IllegalStateException("you should call TaskManager.start() first");
-        }
         Message msg = handler.obtainMessage(TaskHandler.MSG_CANCEL, key);
+        handler.sendMessage(msg);
+    }
+
+    public void cancelAll() {
+        Message msg = handler.obtainMessage(TaskHandler.MSG_CANCEL_ALL);
         handler.sendMessage(msg);
     }
 
