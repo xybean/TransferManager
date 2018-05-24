@@ -19,7 +19,6 @@ public abstract class Task<K, R> implements Runnable {
     private static final int EXECUTING = 1;
     private static final int COMPLETED = 2;
     private static final int FAILED = 3;
-    private static final int CANCELED = 4;
 
     private volatile int state = WAITING;
 
@@ -41,7 +40,6 @@ public abstract class Task<K, R> implements Runnable {
     @Override
     public final void run() {
         if (canceled) {
-            onCanceled();
             return;
         }
         state = EXECUTING;
@@ -49,17 +47,14 @@ public abstract class Task<K, R> implements Runnable {
         try {
             R r = execute();
             if (isCanceled()) {
-                onCanceled();
                 return;
             }
             state = COMPLETED;
             // can't be canceled anymore, so reset the value
             canceled = false;
             internalListener.onSuccess(this, r);
-        } catch (TaskCanceledException e) {
-            onCanceled();
         } catch (InterruptedException e) {
-            onCanceled();
+            state = FAILED;
             // reset
             Thread.currentThread().interrupt();
         } catch (Exception e) {
@@ -72,10 +67,7 @@ public abstract class Task<K, R> implements Runnable {
      * implementation for executing logic
      *
      * @return result of task
-     * @throws Exception the exception will be caught by {@link Task#run()},<br/>
-     *                   if you catch Exception in execute(),
-     *                   {@link TaskExecuteListener#onFailed(Object, Throwable)} may not be called.<br/>
-     *                   If you want to make the task cancelable, one of the way is throwing {@link TaskCanceledException}
+     * @throws Exception the exception will be caught by {@link Task#run()}
      */
     protected abstract R execute() throws Exception;
 
@@ -92,7 +84,7 @@ public abstract class Task<K, R> implements Runnable {
     }
 
     public boolean isCanceled() {
-        return canceled || state == CANCELED;
+        return canceled;
     }
 
     public boolean isFailed() {
@@ -110,12 +102,6 @@ public abstract class Task<K, R> implements Runnable {
     @CallSuper
     public void cancel() {
         canceled = true;
-    }
-
-    void onCanceled() {
-        canceled = true;
-        state = CANCELED;
-        internalListener.onCanceled(this);
     }
 
     void bindInternalListener(TaskExecuteInternalListener<K, R> internalListener) {

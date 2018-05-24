@@ -4,6 +4,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 
+import java.util.Iterator;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -167,24 +168,78 @@ final class TaskHandler<K, R> extends Handler {
             }
             case MSG_CANCEL: {
                 K key = (K) msg.obj;
+
                 // if task is in the waiting queue, remove it and call callback
                 boolean removed = false;
                 synchronized (waiting) {
-                    for (Task<K, R> task : waiting) {
+                    Iterator<Task<K, R>> iterator = waiting.iterator();
+                    int waitingPre = waiting.size();
+                    while (iterator.hasNext()) {
+                        Task<K, R> task = iterator.next();
                         if (task.getKey().equals(key)) {
-                            task.onCanceled();
+                            task.cancel();
                             removed = true;
+                            iterator.remove();
+                            if (task.listener != null) {
+                                task.listener.onCanceled(task.getKey());
+                            }
+                            if (queueListener != null) {
+                                queueListener.onWaitingQueueUpdate(waitingPre, waitingPre - 1);
+                            }
                         }
                     }
                 }
                 // if task is in the executing queue, call task.cancel()
                 if (!removed) {
                     synchronized (executing) {
-                        for (Task<K, R> task : executing) {
+                        Iterator<Task<K, R>> iterator = executing.iterator();
+                        int executingPre = executing.size();
+                        while (iterator.hasNext()) {
+                            Task<K, R> task = iterator.next();
                             if (task.getKey().equals(key)) {
                                 task.cancel();
+                                iterator.remove();
+                                if (task.listener != null) {
+                                    task.listener.onCanceled(task.getKey());
+                                }
+                                if (queueListener != null) {
+                                    queueListener.onExecutingQueueUpdate(executingPre, executingPre - 1);
+                                }
                             }
                         }
+                    }
+                }
+                break;
+            }
+            case MSG_CANCEL_ALL: {
+                synchronized (waiting) {
+                    Iterator<Task<K, R>> iterator = waiting.iterator();
+                    int waitingPre = waiting.size();
+                    while (iterator.hasNext()) {
+                        Task<K, R> task = iterator.next();
+                        task.cancel();
+                        iterator.remove();
+                        if (task.listener != null) {
+                            task.listener.onCanceled(task.getKey());
+                        }
+                    }
+                    if (queueListener != null) {
+                        queueListener.onWaitingQueueUpdate(waitingPre, 0);
+                    }
+                }
+                synchronized (executing) {
+                    Iterator<Task<K, R>> iterator = executing.iterator();
+                    int executingPre = executing.size();
+                    while (iterator.hasNext()) {
+                        Task<K, R> task = iterator.next();
+                        task.cancel();
+                        iterator.remove();
+                        if (task.listener != null) {
+                            task.listener.onCanceled(task.getKey());
+                        }
+                    }
+                    if (queueListener != null) {
+                        queueListener.onExecutingQueueUpdate(executingPre, 0);
                     }
                 }
                 break;
@@ -231,44 +286,6 @@ final class TaskHandler<K, R> extends Handler {
                 }
                 if (task.listener != null) {
                     task.listener.onFailed(task.getKey(), throwable);
-                }
-                break;
-            }
-            case MSG_UPDATE_CANCELED: {
-                Task<K, R> task = (Task<K, R>) msg.obj;
-                int waitingPre = waiting.size();
-                int executingPre = executing.size();
-                boolean removedFromWaiting = waiting.remove(task);
-                boolean removedFromExecuting = false;
-                if (!removedFromWaiting) {
-                    removedFromExecuting = executing.remove(task);
-                }
-
-                if (removedFromWaiting) {
-                    if (queueListener != null) {
-                        queueListener.onWaitingQueueUpdate(waitingPre, waitingPre - 1);
-                    }
-                }
-                if (removedFromExecuting) {
-                    if (queueListener != null) {
-                        queueListener.onExecutingQueueUpdate(executingPre, executingPre - 1);
-                    }
-                }
-                if (task.listener != null) {
-                    task.listener.onCanceled(task.getKey());
-                }
-                break;
-            }
-            case MSG_CANCEL_ALL: {
-                synchronized (waiting) {
-                    for (Task<K, R> task : waiting) {
-                        task.onCanceled();
-                    }
-                }
-                synchronized (executing) {
-                    for (Task<K, R> task : executing) {
-                        task.cancel();
-                    }
                 }
                 break;
             }

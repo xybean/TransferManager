@@ -2,7 +2,6 @@ package com.xybean.taskmanager.test;
 
 
 import com.xybean.taskmanager.Task;
-import com.xybean.taskmanager.TaskCanceledException;
 import com.xybean.taskmanager.TaskExecuteListener;
 
 /**
@@ -28,7 +27,7 @@ public class CustomTask extends Task<Long, String> {
         int count = 0;
         for (int i = 0; i < 10; i++) {
             if (isCanceled()) {
-                throw new TaskCanceledException();
+                return "";
             }
             Thread.sleep(1000);
             updateListener.update(getKey(), name + "_count : " + count);
