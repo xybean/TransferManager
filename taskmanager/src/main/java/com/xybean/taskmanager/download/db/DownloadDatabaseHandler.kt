@@ -7,7 +7,7 @@ interface DownloadDatabaseHandler {
 
     fun find(id: Int): DownloadTaskModel?
 
-    fun insert(model: DownloadTaskModel)
+    fun replace(model: DownloadTaskModel)
 
     fun updateProgress(id: Int, current: Long, total: Long)
 

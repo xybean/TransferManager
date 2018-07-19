@@ -9,7 +9,7 @@ class NoDatabaseHandler : DownloadDatabaseHandler {
         return null
     }
 
-    override fun insert(model: DownloadTaskModel) {}
+    override fun replace(model: DownloadTaskModel) {}
 
     override fun updateProgress(id: Int, current: Long, total: Long) {}
 

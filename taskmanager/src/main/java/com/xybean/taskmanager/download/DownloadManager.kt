@@ -13,6 +13,10 @@ import java.util.concurrent.Executor
  */
 class DownloadManager private constructor() {
 
+    companion object {
+        const val TAG = "DownloadManager"
+    }
+
     private lateinit var executor: Executor
     private lateinit var dbHandler: DownloadDatabaseHandler
     private lateinit var connectionFactory: IDownloadConnection.Factory
@@ -24,7 +28,7 @@ class DownloadManager private constructor() {
     private val internalListener = object : DownloadListener {
         override fun onStart(task: IDownloadTask) {
             synchronized(taskList) {
-                dbHandler.insert(DownloadTaskModel().apply {
+                dbHandler.replace(DownloadTaskModel().apply {
                     id = task.id
                     url = task.url
                     targetPath = task.targetPath
@@ -47,6 +51,7 @@ class DownloadManager private constructor() {
         override fun onSucceed(task: IDownloadTask) {
             synchronized(taskList) {
                 taskList.remove(task.id)
+                LogUtils.i(TAG, Utils.formatString("remove a Task(id = %d), TaskList's size is %d now.", task.id, taskList.size()))
             }
             dbHandler.remove(task.id)
             val listener = task.listener
@@ -56,6 +61,7 @@ class DownloadManager private constructor() {
         override fun onFailed(task: IDownloadTask, e: Exception) {
             synchronized(taskList) {
                 taskList.remove(task.id)
+                LogUtils.i(TAG, Utils.formatString("remove a Task(id = %d), TaskList's size is %d now.", task.id, taskList.size()))
             }
             dbHandler.updateFailed(task.id, e)
             val listener = task.listener
@@ -71,6 +77,7 @@ class DownloadManager private constructor() {
             task = taskList.get(id)
             if (task != null) {
                 // 如果已经在执行或者正在等待执行，则重新绑定监听后直接返回
+                LogUtils.d(TAG, Utils.formatString("task(id = %d) is executing now, so we won't inset it twice.", task.id))
                 task.listener = listener
                 return id
             }
@@ -102,6 +109,7 @@ class DownloadManager private constructor() {
             task.listener = listener
             task.bindInternalListener(internalListener)
             taskList.put(id, task)
+            LogUtils.i(TAG, Utils.formatString("insert a new Task(id = %d), TaskList's size is %d now.", task.id, taskList.size()))
 
             executor.execute(task)
             return id
@@ -115,6 +123,7 @@ class DownloadManager private constructor() {
                 task.cancel()
                 taskList.remove(id)
                 dbHandler.remove(task.id)
+                LogUtils.i(TAG, Utils.formatString("remove a Task(id = %d), TaskList's size is %d now.", task.id, taskList.size()))
             }
         }
     }
@@ -125,6 +134,7 @@ class DownloadManager private constructor() {
             if (task != null) {
                 task.pause()
                 taskList.remove(id)
+                LogUtils.i(TAG, Utils.formatString("remove a Task(id = %d), TaskList's size is %d now.", task.id, taskList.size()))
             }
         }
     }

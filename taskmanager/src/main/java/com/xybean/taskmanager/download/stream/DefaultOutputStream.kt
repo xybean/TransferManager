@@ -9,7 +9,7 @@ class DefaultOutputStream @JvmOverloads constructor(private var offset: Long = -
 
     @Throws(IOException::class)
     override fun getOutputStream(path: String): OutputStream {
-        if (offset > 0) {
+        return if (offset > 0) {
             val file = File(path)
             if (!file.exists()) {
                 throw FileNotFoundException("if you want to access file by offset("
@@ -18,9 +18,9 @@ class DefaultOutputStream @JvmOverloads constructor(private var offset: Long = -
             }
             val randomFileOutputStream = RandomFileOutputStream(file)
             randomFileOutputStream.seek(offset)
-            return BufferedOutputStream(randomFileOutputStream)
+            BufferedOutputStream(randomFileOutputStream)
         } else {
-            return BufferedOutputStream(FileOutputStream(path))
+            BufferedOutputStream(FileOutputStream(path))
         }
     }
 }

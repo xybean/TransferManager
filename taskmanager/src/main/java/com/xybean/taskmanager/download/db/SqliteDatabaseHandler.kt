@@ -17,10 +17,9 @@ class SqliteDatabaseHandler : DownloadDatabaseHandler {
 
     private val lock = Any()
 
-    constructor() {
+    init {
         val openHelper = SqliteDatabaseOpenHelper(
                 TransferHelper.getAppContext())
-
         db = openHelper.writableDatabase
     }
 
@@ -34,17 +33,15 @@ class SqliteDatabaseHandler : DownloadDatabaseHandler {
                     return createFromCursor(c)
                 }
             } finally {
-                if (c != null) {
-                    c.close()
-                }
+                c?.close()
             }
             return null
         }
     }
 
-    override fun insert(model: DownloadTaskModel) {
+    override fun replace(model: DownloadTaskModel) {
         synchronized(lock) {
-            db.insert(DownloadTaskModel.TABLE_NAME, null, model.toContentValues())
+            db.replace(DownloadTaskModel.TABLE_NAME, null, model.toContentValues())
         }
     }
 

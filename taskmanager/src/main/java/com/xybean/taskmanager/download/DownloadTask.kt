@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger
 class DownloadTask private constructor() : IDownloadTask, Runnable {
 
     companion object {
+        private const val TAG = "DownloadTask"
         private const val BUFFER_SIZE = 1024
     }
 
@@ -50,9 +51,11 @@ class DownloadTask private constructor() : IDownloadTask, Runnable {
     override fun run() {
 
         if (canceled || paused) {
+            LogUtils.d(TAG, Utils.formatString("Task(id = %d) has been canceled or paused before start.", id))
             return
         }
         status = DownloadStatus.START
+        LogUtils.i(TAG, Utils.formatString("Task(id = %d) start to be executed and save at %s", id, saveAsFile()))
         internalListener!!.onStart(this)
 
         // 连接网络、读流、写流、存库
@@ -92,10 +95,14 @@ class DownloadTask private constructor() : IDownloadTask, Runnable {
                 count = bis.read(buffer)
             }
             when {
-                canceled -> return
+                canceled -> {
+                    LogUtils.i(TAG, Utils.formatString("Task(id = %d) is canceled.", id))
+                    return
+                }
                 paused -> {
                     out.flush()
                     status = DownloadStatus.PAUSED
+                    LogUtils.i(TAG, Utils.formatString("Task(id = %d) is paused.", id))
                     return
                 }
                 else -> out.flush()
@@ -112,6 +119,7 @@ class DownloadTask private constructor() : IDownloadTask, Runnable {
 
         } catch (e: Exception) {
             status = DownloadStatus.FAILED
+            LogUtils.d(TAG, Utils.formatString("Task(id = %d) is failed. %s", id, e.stackTrace))
             internalListener!!.onFailed(this, e)
         } finally {
             connection.close()

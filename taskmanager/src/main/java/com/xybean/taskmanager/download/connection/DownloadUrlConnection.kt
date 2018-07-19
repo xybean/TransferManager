@@ -9,13 +9,13 @@ import java.net.URLConnection
 /**
  * Author @xybean on 2018/7/18.
  */
-class DownloadUrlConnection : IDownloadConnection {
+class DownloadUrlConnection @Throws(IOException::class)
+@JvmOverloads constructor(originUrl: String, config: IDownloadConnection.Configuration? = null)
+    : IDownloadConnection {
 
     private var mConnection: URLConnection
 
-    @Throws(IOException::class)
-    @JvmOverloads
-    constructor(originUrl: String, config: IDownloadConnection.Configuration? = null) {
+    init {
         val url = URL(originUrl)
         mConnection = url.openConnection()
         if (config != null) {
