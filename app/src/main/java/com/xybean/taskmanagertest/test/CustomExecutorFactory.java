@@ -1,4 +1,4 @@
-package com.xybean.taskmanager.test;
+package com.xybean.taskmanagertest.test;
 
 import com.xybean.taskmanager.IExecutorFactory;
 

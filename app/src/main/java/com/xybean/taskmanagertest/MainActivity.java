@@ -1,4 +1,4 @@
-package com.xybean.taskmanager;
+package com.xybean.taskmanagertest;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -16,6 +16,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 startActivity(new Intent(MainActivity.this, TestTaskActivity.class));
+            }
+        });
+
+        findViewById(R.id.btn_test_download).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this, DownloadActivity.class));
             }
         });
     }

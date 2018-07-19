@@ -1,4 +1,4 @@
-package com.xybean.taskmanager.test;
+package com.xybean.taskmanagertest.test;
 
 /**
  * Author @xybean on 2018/3/22.

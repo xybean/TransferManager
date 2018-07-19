@@ -1,4 +1,4 @@
-package com.xybean.taskmanager;
+package com.xybean.taskmanagertest;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -11,9 +11,12 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
-import com.xybean.taskmanager.test.CustomExecutorFactory;
-import com.xybean.taskmanager.test.CustomTask;
-import com.xybean.taskmanager.test.UpdateListener;
+import com.xybean.taskmanager.TaskExecuteListener;
+import com.xybean.taskmanager.TaskManager;
+import com.xybean.taskmanager.TaskQueueListener;
+import com.xybean.taskmanagertest.test.CustomExecutorFactory;
+import com.xybean.taskmanagertest.test.CustomTask;
+import com.xybean.taskmanagertest.test.UpdateListener;
 
 import java.util.ArrayList;
 import java.util.List;
