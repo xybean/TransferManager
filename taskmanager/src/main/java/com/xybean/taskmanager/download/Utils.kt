@@ -3,7 +3,6 @@ package com.xybean.taskmanager.download
 import android.os.Environment
 import android.os.StatFs
 import java.io.File
-import java.util.*
 
 /**
  * Author @xybean on 2018/7/16.
@@ -21,9 +20,9 @@ internal object Utils {
         get() {
             val sdcardFileDir = Environment.getExternalStorageDirectory()
             val stat = StatFs(sdcardFileDir.path)
-            val blockSize = stat.blockSize.toLong()
-            stat.blockCount
-            return stat.availableBlocks * blockSize
+            val blockSize = stat.blockSizeLong
+            stat.blockCountLong
+            return stat.availableBlocksLong * blockSize
         }
 
     /**
@@ -45,19 +44,18 @@ internal object Utils {
      *
      * @param file
      */
-    fun recursionDeleteFile(file: File) {
-        var flag = false
+    private fun recursionDeleteFile(file: File) {
         if (file.isFile) {
-            flag = file.delete()
+            file.delete()
         } else if (file.isDirectory) {
             val childFile = file.listFiles()
             if (childFile == null || childFile.isEmpty()) {
-                flag = file.delete()
+                file.delete()
             } else {
                 for (f in childFile) {
                     recursionDeleteFile(f)
                 }
-                flag = file.delete()
+                file.delete()
             }
         }
     }
@@ -82,17 +80,13 @@ internal object Utils {
         return false
     }
 
-    fun formatString(msg: String, vararg args: Any): String {
-        return String.format(Locale.ENGLISH, msg, *args)
-    }
-
     fun getRangeHeader(offset: Long, total: Long = -1): Pair<String, String> {
         val range: String
         return if (total > 0 && total > offset) {
-            range = String.format(Locale.ENGLISH, "bytes=%d-%d", offset, total)
+            range = "bytes=$offset-$total"
             Pair("Range", range)
         } else {
-            range = String.format(Locale.ENGLISH, "bytes=%d-", offset)
+            range = "bytes=$offset-"
             Pair("Range", range)
         }
     }

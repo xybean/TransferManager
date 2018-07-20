@@ -26,7 +26,8 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
     private lateinit var outputStream: IDownloadStream
     private val headers: MutableMap<String, String> = HashMap()
 
-    private var offset: Long = -1
+    private var current: Long = 0
+    private var total: Long = 0
     private var targetPath: String = ""
     private var targetName: String = ""
     private var url: String = ""
@@ -42,11 +43,11 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
     override fun run() {
 
         if (canceled || paused) {
-            LogUtils.d(TAG, Utils.formatString("Task(id = %d) has been canceled or paused before start.", id))
+            LogUtils.d(TAG, "Task(id = $id) has been canceled or paused before start.")
             return
         }
         status.set(DownloadStatus.START)
-        LogUtils.i(TAG, Utils.formatString("Task(id = %d) start to be executed and save at %s", id, saveAsFile()))
+        LogUtils.i(TAG, "Task(id = $id) start to be executed and save at ${saveAsFile()}")
         internalListener?.onStart(this)
 
         // 连接网络、读流、写流、存库
@@ -70,10 +71,10 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
 
             // 读流
             val tempFile = File(generateTempFile())
-            if (offset <= 0) {
+            if (current <= 0) {
                 if (tempFile.exists()) {
-                    LogUtils.d(TAG, Utils.formatString("task(id = %d): in order to redownload file," +
-                            "we delete file at %s firstly.", id, generateTempFile()))
+                    LogUtils.d(TAG, "task(id = $id): in order to redownload file," +
+                            "we delete file at ${generateTempFile()} firstly.")
                     tempFile.delete()
                 }
             }
@@ -82,9 +83,8 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
             val bis = connection.getInputStream()
             val buffer = ByteArray(BUFFER_SIZE)
             var count: Int
-            var current = if (offset > 0) offset else 0
-            val total = if (offset > 0) {
-                offset + contentLength
+            total = if (current > 0) {
+                current + contentLength
             } else {
                 contentLength
             }
@@ -95,18 +95,18 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
                 out.write(buffer, 0, count)
                 current += count.toLong()
                 // 更新数据库
-                internalListener?.onUpdate(this, current, total)
+                internalListener?.onUpdate(this)
                 count = bis.read(buffer)
             }
             when {
                 canceled -> {
-                    LogUtils.i(TAG, Utils.formatString("Task(id = %d) is canceled.", id))
+                    LogUtils.i(TAG, "Task(id = $id) is canceled.")
                     return
                 }
                 paused -> {
                     out.flush()
                     status.set(DownloadStatus.PAUSED)
-                    LogUtils.i(TAG, Utils.formatString("Task(id = %d) is paused.", id))
+                    LogUtils.i(TAG, "Task(id = $id) is paused.")
                     return
                 }
                 else -> out.flush()
@@ -123,7 +123,7 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
 
         } catch (e: Exception) {
             status.set(DownloadStatus.FAILED)
-            LogUtils.e(TAG, Utils.formatString("Task(id = %d) is failed.", id), e)
+            LogUtils.e(TAG, "Task(id = $id) is failed.", e)
             internalListener?.onFailed(this, e)
         } finally {
             connection.close()
@@ -162,8 +162,12 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
         return targetName
     }
 
-    override fun getOffset(): Long {
-        return offset
+    override fun getCurrent(): Long {
+        return current
+    }
+
+    override fun getTotal(): Long {
+        return total
     }
 
     fun cancel() {
@@ -229,7 +233,7 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
         }
 
         fun offset(start: Long) = apply {
-            task.offset = start
+            task.current = start
         }
 
         fun build(): DownloadTask {

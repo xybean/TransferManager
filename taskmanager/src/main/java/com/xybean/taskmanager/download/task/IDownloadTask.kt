@@ -21,5 +21,7 @@ interface IDownloadTask {
 
     fun getTargetName(): String
 
-    fun getOffset(): Long
+    fun getCurrent(): Long
+
+    fun getTotal(): Long
 }

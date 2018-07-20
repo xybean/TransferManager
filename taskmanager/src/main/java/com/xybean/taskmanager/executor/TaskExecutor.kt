@@ -28,7 +28,7 @@ class TaskExecutor(name: String, poolSize: Int) {
 
         override fun newThread(r: Runnable?): Thread {
             val group = Thread.currentThread().threadGroup
-            return Thread(group, r, prefix + threadNumber.getAndIncrement(), 0)
+            return Thread(group, r, prefix + "#" + threadNumber.getAndIncrement(), 0)
         }
     }
 

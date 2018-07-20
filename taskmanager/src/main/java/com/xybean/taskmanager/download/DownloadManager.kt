@@ -47,17 +47,17 @@ class DownloadManager private constructor() {
             listener?.onStart(task)
         }
 
-        override fun onUpdate(task: IDownloadTask, current: Long, total: Long) {
+        override fun onUpdate(task: IDownloadTask) {
             val listener = task.getListener()
-            dbHandler.updateProgress(task.getId(), current, total)
-            listener?.onUpdate(task, current, total)
+            dbHandler.updateProgress(task.getId(), task.getCurrent(), task.getTotal())
+            listener?.onUpdate(task)
         }
 
         override fun onSucceed(task: IDownloadTask) {
             synchronized(taskList) {
                 taskList.remove(task.getId())
-                LogUtils.i(TAG, Utils.formatString("download succeed and remove a Task(id = %d), " +
-                        "TaskList's size is %d now.", task.getId(), taskList.size()))
+                LogUtils.i(TAG, "download succeed and remove a Task(id = ${task.getId()})," +
+                        " TaskList's size is ${taskList.size()} now.")
             }
             dbHandler.remove(task.getId())
             val listener = task.getListener()
@@ -67,8 +67,8 @@ class DownloadManager private constructor() {
         override fun onFailed(task: IDownloadTask, e: Exception) {
             synchronized(taskList) {
                 taskList.remove(task.getId())
-                LogUtils.i(TAG, Utils.formatString("download failed and remove a Task(id = %d), " +
-                        "TaskList's size is %d now.", task.getId(), taskList.size()))
+                LogUtils.i(TAG, "download failed and remove a Task(id = ${task.getId()})," +
+                        " TaskList's size is ${taskList.size()} now.")
             }
             dbHandler.updateFailed(task.getId(), e)
             val listener = task.getListener()
@@ -90,7 +90,7 @@ class DownloadManager private constructor() {
             val cachedTask: DownloadTask? = taskList.get(id)
             if (cachedTask != null) {
                 // 如果已经在执行或者正在等待执行，则重新绑定监听后直接返回
-                LogUtils.d(TAG, Utils.formatString("task(id = %d) is executing now, so we won't start it twice.", cachedTask.getId()))
+                LogUtils.d(TAG, "task(id = ${cachedTask.getId()}) is executing now, so we won't start it twice.")
                 if (listener != null) {
                     cachedTask.setListener(listener)
                 }
@@ -137,7 +137,7 @@ class DownloadManager private constructor() {
                     }
                     task.bindInternalListener(internalListener)
                     taskList.put(id, task)
-                    LogUtils.i(TAG, Utils.formatString("insert a new Task(id = %d), TaskList's size is %d now.", task.getId(), taskList.size()))
+                    LogUtils.i(TAG, "insert a new Task(id = ${task.getId()}), TaskList's size is ${taskList.size()} now.")
 
                     executor.execute(task)
                     return null
@@ -159,7 +159,7 @@ class DownloadManager private constructor() {
             if (task != null) {
                 task.cancel()
                 taskList.remove(id)
-                LogUtils.i(TAG, Utils.formatString("cancel and remove a Task(id = %d), TaskList's size is %d now.", task.getId(), taskList.size()))
+                LogUtils.i(TAG, "cancel and remove a Task(id = ${task.getId()}), TaskList's size is ${taskList.size()} now.")
             }
             internalExecutor.execute(object : BaseTask<Void?>() {
                 override fun execute(): Void? {
@@ -180,8 +180,8 @@ class DownloadManager private constructor() {
             if (task != null) {
                 task.pause()
                 taskList.remove(id)
-                LogUtils.i(TAG, Utils.formatString("pause and remove a Task(id = %d), " +
-                        "TaskList's size is %d now.", task.getId(), taskList.size()))
+                LogUtils.i(TAG, "pause and remove a Task(id = ${task.getId()}), " +
+                        "TaskList's size is ${taskList.size()} now.")
             }
         }
     }

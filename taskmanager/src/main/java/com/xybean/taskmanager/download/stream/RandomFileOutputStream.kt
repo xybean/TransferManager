@@ -30,7 +30,7 @@ class RandomFileOutputStream @Throws(IOException::class)
 
     init {
         if (!file.exists()) {
-            throw FileNotFoundException("if you want to access file by offset, please make sure there is a file at $file")
+            throw FileNotFoundException("if you want to access file by offset, please make sure there is a file at ${file.absolutePath}")
         }
         randomFile = RandomAccessFile(file, "rw")
     }

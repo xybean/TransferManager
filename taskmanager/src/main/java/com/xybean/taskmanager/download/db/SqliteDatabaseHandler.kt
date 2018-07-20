@@ -4,7 +4,6 @@ import android.content.ContentValues
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import com.xybean.taskmanager.download.ApplicationHolder
-import com.xybean.taskmanager.download.Utils
 import com.xybean.taskmanager.download.db.DownloadTaskModel.Companion.TABLE_NAME
 import com.xybean.taskmanager.download.task.DownloadStatus
 
@@ -27,8 +26,8 @@ class SqliteDatabaseHandler : DownloadDatabaseHandler {
         synchronized(lock) {
             var c: Cursor? = null
             try {
-                c = db.rawQuery(Utils.formatString("SELECT * FROM %s WHERE %s = ?",
-                        TABLE_NAME, DownloadTaskModel.ID), arrayOf(Integer.toString(id)))
+                c = db.rawQuery("SELECT * FROM $TABLE_NAME WHERE ${DownloadTaskModel.ID} = ?",
+                        arrayOf(Integer.toString(id)))
                 if (c!!.moveToNext()) {
                     return createFromCursor(c)
                 }

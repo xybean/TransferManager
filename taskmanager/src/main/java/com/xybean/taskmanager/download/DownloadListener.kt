@@ -9,7 +9,7 @@ interface DownloadListener {
 
     fun onStart(task: IDownloadTask)
 
-    fun onUpdate(task: IDownloadTask, current: Long, total: Long)
+    fun onUpdate(task: IDownloadTask)
 
     fun onSucceed(task: IDownloadTask)
 

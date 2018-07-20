@@ -11,8 +11,8 @@ import java.net.URLConnection
  * Author @xybean on 2018/7/18.
  */
 class DownloadUrlConnection @Throws(IOException::class)
-@JvmOverloads constructor(task: IDownloadTask, config: IDownloadConnection.Configuration? = null)
-    : IDownloadConnection(task) {
+@JvmOverloads constructor(task: IDownloadTask, downloadConfig: IDownloadConnection.Configuration? = null)
+    : IDownloadConnection(task, downloadConfig) {
 
     private var mConnection: URLConnection
 
