@@ -8,7 +8,7 @@ import java.lang.IllegalArgumentException
  * Author @xybean on 2018/7/18.
  */
 @SuppressLint("StaticFieldLeak")
-object TransferHelper {
+object ApplicationHolder {
 
     private var APP_CONTEXT: Context? = null
 

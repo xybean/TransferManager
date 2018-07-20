@@ -1,6 +1,7 @@
 package com.xybean.taskmanager.download.connection
 
 import android.os.Build
+import com.xybean.taskmanager.download.task.IDownloadTask
 import java.io.IOException
 import java.io.InputStream
 import java.net.URL
@@ -10,13 +11,13 @@ import java.net.URLConnection
  * Author @xybean on 2018/7/18.
  */
 class DownloadUrlConnection @Throws(IOException::class)
-@JvmOverloads constructor(originUrl: String, config: IDownloadConnection.Configuration? = null)
-    : IDownloadConnection {
+@JvmOverloads constructor(task: IDownloadTask, config: IDownloadConnection.Configuration? = null)
+    : IDownloadConnection(task) {
 
     private var mConnection: URLConnection
 
     init {
-        val url = URL(originUrl)
+        val url = URL(task.getUrl())
         mConnection = url.openConnection()
         if (config != null) {
             if (config.getReadTimeOut() > 0) {

@@ -4,8 +4,10 @@ import android.util.SparseArray
 import com.xybean.taskmanager.download.connection.IDownloadConnection
 import com.xybean.taskmanager.download.db.DownloadDatabaseHandler
 import com.xybean.taskmanager.download.db.DownloadTaskModel
-import com.xybean.taskmanager.download.stream.DefaultOutputStream
-import com.xybean.taskmanager.download.stream.IOutputStream
+import com.xybean.taskmanager.download.stream.IDownloadStream
+import com.xybean.taskmanager.download.task.DownloadStatus
+import com.xybean.taskmanager.download.task.DownloadTask
+import com.xybean.taskmanager.download.task.IDownloadTask
 import com.xybean.taskmanager.executor.BaseTask
 import com.xybean.taskmanager.executor.TaskExecutor
 import java.util.concurrent.Executor
@@ -24,6 +26,7 @@ class DownloadManager private constructor() {
     private lateinit var executor: Executor
     private lateinit var dbHandler: DownloadDatabaseHandler
     private lateinit var connectionFactory: IDownloadConnection.Factory
+    private lateinit var streamFactory: IDownloadStream.Factory
 
     private val taskList: SparseArray<DownloadTask> = SparseArray()
 
@@ -31,42 +34,44 @@ class DownloadManager private constructor() {
         override fun onStart(task: IDownloadTask) {
             synchronized(taskList) {
                 dbHandler.replace(DownloadTaskModel().apply {
-                    id = task.id
-                    url = task.url
-                    targetPath = task.targetPath
-                    targetName = task.targetName
+                    id = task.getId()
+                    url = task.getUrl()
+                    targetPath = task.getTargetPath()
+                    targetName = task.getTargetName()
                     status = DownloadStatus.START
                     current = 0
                     total = 0
                 })
             }
-            val listener = task.listener
+            val listener = task.getListener()
             listener?.onStart(task)
         }
 
         override fun onUpdate(task: IDownloadTask, current: Long, total: Long) {
-            val listener = task.listener
-            dbHandler.updateProgress(task.id, current, total)
+            val listener = task.getListener()
+            dbHandler.updateProgress(task.getId(), current, total)
             listener?.onUpdate(task, current, total)
         }
 
         override fun onSucceed(task: IDownloadTask) {
             synchronized(taskList) {
-                taskList.remove(task.id)
-                LogUtils.i(TAG, Utils.formatString("remove a Task(id = %d), TaskList's size is %d now.", task.id, taskList.size()))
+                taskList.remove(task.getId())
+                LogUtils.i(TAG, Utils.formatString("download succeed and remove a Task(id = %d), " +
+                        "TaskList's size is %d now.", task.getId(), taskList.size()))
             }
-            dbHandler.remove(task.id)
-            val listener = task.listener
+            dbHandler.remove(task.getId())
+            val listener = task.getListener()
             listener?.onSucceed(task)
         }
 
         override fun onFailed(task: IDownloadTask, e: Exception) {
             synchronized(taskList) {
-                taskList.remove(task.id)
-                LogUtils.i(TAG, Utils.formatString("remove a Task(id = %d), TaskList's size is %d now.", task.id, taskList.size()))
+                taskList.remove(task.getId())
+                LogUtils.i(TAG, Utils.formatString("download failed and remove a Task(id = %d), " +
+                        "TaskList's size is %d now.", task.getId(), taskList.size()))
             }
-            dbHandler.updateFailed(task.id, e)
-            val listener = task.listener
+            dbHandler.updateFailed(task.getId(), e)
+            val listener = task.getListener()
             listener?.onFailed(task, e)
         }
     }
@@ -78,17 +83,17 @@ class DownloadManager private constructor() {
      * @param targetName 下载文件的文件名
      * @param forceReload 是否强制重新下载，如果为true，则不会进行断点续传，而是强制重新下载
      * @param listener
-     * @param outputStream 目标文件的写入流
      */
-    fun download(url: String, targetPath: String, targetName: String, forceReload: Boolean,
-                 listener: DownloadListener? = null, outputStream: IOutputStream? = null): Int {
+    fun download(url: String, targetPath: String, targetName: String, forceReload: Boolean, listener: DownloadListener? = null): Int {
         val id = IdGenerator.generateId(url, targetPath, targetName)
         synchronized(taskList) {
             val cachedTask: DownloadTask? = taskList.get(id)
             if (cachedTask != null) {
                 // 如果已经在执行或者正在等待执行，则重新绑定监听后直接返回
-                LogUtils.d(TAG, Utils.formatString("task(id = %d) is executing now, so we won't start it twice.", cachedTask.id))
-                cachedTask.listener = listener
+                LogUtils.d(TAG, Utils.formatString("task(id = %d) is executing now, so we won't start it twice.", cachedTask.getId()))
+                if (listener != null) {
+                    cachedTask.setListener(listener)
+                }
                 return id
             }
         }
@@ -104,15 +109,15 @@ class DownloadManager private constructor() {
                     val model = dbHandler.find(id)
                     if (model != null) {
                         // 如果之前有下载记录，则恢复记录
-                        val header = Utils.getRangeHeader(model.current);
+                        val header = Utils.getRangeHeader(model.current)
                         task = DownloadTask.Builder()
                                 .url(model.url)
                                 .targetPath(model.targetPath)
                                 .targetName(model.targetName)
                                 .offset(model.current)
                                 .addHeader(header.first, header.second)
-                                .connection(connectionFactory.createConnection())
-                                .outputStream(outputStream ?: DefaultOutputStream(model.current))
+                                .connection(connectionFactory)
+                                .outputStream(streamFactory)
                                 .build()
                     }
 
@@ -122,15 +127,17 @@ class DownloadManager private constructor() {
                                 .url(url)
                                 .targetPath(targetPath)
                                 .targetName(targetName)
-                                .connection(connectionFactory.createConnection())
-                                .outputStream(outputStream ?: DefaultOutputStream())
+                                .connection(connectionFactory)
+                                .outputStream(streamFactory)
                                 .build()
                     }
 
-                    task.listener = listener
+                    if (listener != null) {
+                        task.setListener(listener)
+                    }
                     task.bindInternalListener(internalListener)
                     taskList.put(id, task)
-                    LogUtils.i(TAG, Utils.formatString("insert a new Task(id = %d), TaskList's size is %d now.", task.id, taskList.size()))
+                    LogUtils.i(TAG, Utils.formatString("insert a new Task(id = %d), TaskList's size is %d now.", task.getId(), taskList.size()))
 
                     executor.execute(task)
                     return null
@@ -152,11 +159,11 @@ class DownloadManager private constructor() {
             if (task != null) {
                 task.cancel()
                 taskList.remove(id)
-                LogUtils.i(TAG, Utils.formatString("remove a Task(id = %d), TaskList's size is %d now.", task.id, taskList.size()))
+                LogUtils.i(TAG, Utils.formatString("cancel and remove a Task(id = %d), TaskList's size is %d now.", task.getId(), taskList.size()))
             }
             internalExecutor.execute(object : BaseTask<Void?>() {
                 override fun execute(): Void? {
-                    dbHandler.remove(task.id)
+                    dbHandler.remove(task.getId())
                     return null
                 }
             })
@@ -173,7 +180,8 @@ class DownloadManager private constructor() {
             if (task != null) {
                 task.pause()
                 taskList.remove(id)
-                LogUtils.i(TAG, Utils.formatString("remove a Task(id = %d), TaskList's size is %d now.", task.id, taskList.size()))
+                LogUtils.i(TAG, Utils.formatString("pause and remove a Task(id = %d), " +
+                        "TaskList's size is %d now.", task.getId(), taskList.size()))
             }
         }
     }
@@ -192,6 +200,14 @@ class DownloadManager private constructor() {
 
         fun connection(connectionFactory: IDownloadConnection.Factory) = apply {
             manager.connectionFactory = connectionFactory
+        }
+
+        fun stream(streamFactory: IDownloadStream.Factory) = apply {
+            manager.streamFactory = streamFactory
+        }
+
+        fun debug(debug: Boolean) = apply {
+            LogUtils.DEBUG = debug
         }
 
         fun build() = manager

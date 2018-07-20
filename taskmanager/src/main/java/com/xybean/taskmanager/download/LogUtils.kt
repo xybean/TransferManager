@@ -6,7 +6,7 @@ import android.util.Log
  * Author @xybean on 2018/7/19.
  */
 internal object LogUtils {
-    private const val DEBUG = true
+    var DEBUG = false
 
     fun d(tag: String, msg: String) {
         if (DEBUG) {
@@ -14,9 +14,9 @@ internal object LogUtils {
         }
     }
 
-    fun e(tag: String, msg: String) {
+    fun e(tag: String, msg: String, tr: Throwable) {
         if (DEBUG) {
-            Log.e(tag, msg)
+            Log.e(tag, msg, tr)
         }
     }
 

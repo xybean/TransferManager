@@ -3,10 +3,10 @@ package com.xybean.taskmanager.download.db
 import android.content.ContentValues
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
-import com.xybean.taskmanager.download.DownloadStatus
-import com.xybean.taskmanager.download.TransferHelper
+import com.xybean.taskmanager.download.ApplicationHolder
 import com.xybean.taskmanager.download.Utils
 import com.xybean.taskmanager.download.db.DownloadTaskModel.Companion.TABLE_NAME
+import com.xybean.taskmanager.download.task.DownloadStatus
 
 /**
  * Author @xybean on 2018/7/16.
@@ -19,7 +19,7 @@ class SqliteDatabaseHandler : DownloadDatabaseHandler {
 
     init {
         val openHelper = SqliteDatabaseOpenHelper(
-                TransferHelper.getAppContext())
+                ApplicationHolder.getAppContext())
         db = openHelper.writableDatabase
     }
 

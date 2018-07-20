@@ -8,11 +8,13 @@ import android.widget.TextView;
 
 import com.xybean.taskmanager.download.DownloadListener;
 import com.xybean.taskmanager.download.DownloadManager;
-import com.xybean.taskmanager.download.IDownloadTask;
-import com.xybean.taskmanager.download.TransferHelper;
+import com.xybean.taskmanager.download.task.IDownloadTask;
+import com.xybean.taskmanager.download.ApplicationHolder;
 import com.xybean.taskmanager.download.connection.DownloadUrlConnection;
 import com.xybean.taskmanager.download.connection.IDownloadConnection;
 import com.xybean.taskmanager.download.db.SqliteDatabaseHandler;
+import com.xybean.taskmanager.download.stream.DefaultDownloadStream;
+import com.xybean.taskmanager.download.stream.IDownloadStream;
 
 import java.io.IOException;
 import java.util.concurrent.Executors;
@@ -32,18 +34,26 @@ public class DownloadActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_download);
 
-        TransferHelper.INSTANCE.holdContext(getApplicationContext());
+        ApplicationHolder.INSTANCE.holdContext(getApplicationContext());
 
         manager = new DownloadManager.Builder()
                 .dbHandler(new SqliteDatabaseHandler())
                 .executor(Executors.newSingleThreadExecutor())
                 .connection(new IDownloadConnection.Factory() {
-                    @Override
                     @NonNull
-                    public IDownloadConnection createConnection() throws IOException {
-                        return new DownloadUrlConnection(DOWNLOAD_URL);
+                    @Override
+                    public IDownloadConnection createConnection(@NonNull IDownloadTask task) throws IOException {
+                        return new DownloadUrlConnection(task);
                     }
                 })
+                .stream(new IDownloadStream.Factory() {
+                    @NonNull
+                    @Override
+                    public IDownloadStream createDownloadStream(@NonNull IDownloadTask task) {
+                        return new DefaultDownloadStream(task);
+                    }
+                })
+                .debug(true)
                 .build();
 
         targetPath = getCacheDir().getAbsolutePath();
@@ -97,7 +107,7 @@ public class DownloadActivity extends AppCompatActivity {
                                     }
                                 });
                             }
-                        }, null);
+                        });
             }
         });
 

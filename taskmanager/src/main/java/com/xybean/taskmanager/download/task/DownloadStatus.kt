@@ -1,4 +1,4 @@
-package com.xybean.taskmanager.download
+package com.xybean.taskmanager.download.task
 
 /**
  * Author @xybean on 2018/7/16.

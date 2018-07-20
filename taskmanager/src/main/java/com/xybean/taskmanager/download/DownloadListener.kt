@@ -1,5 +1,7 @@
 package com.xybean.taskmanager.download
 
+import com.xybean.taskmanager.download.task.IDownloadTask
+
 /**
  * Author @xybean on 2018/7/16.
  */

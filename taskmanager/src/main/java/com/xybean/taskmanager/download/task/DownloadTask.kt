@@ -1,8 +1,12 @@
-package com.xybean.taskmanager.download
+package com.xybean.taskmanager.download.task
 
+import com.xybean.taskmanager.download.DownloadListener
+import com.xybean.taskmanager.download.IdGenerator
+import com.xybean.taskmanager.download.LogUtils
+import com.xybean.taskmanager.download.Utils
 import com.xybean.taskmanager.download.connection.IDownloadConnection
 import com.xybean.taskmanager.download.exception.NoEnoughSpaceException
-import com.xybean.taskmanager.download.stream.IOutputStream
+import com.xybean.taskmanager.download.stream.IDownloadStream
 import java.io.File
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
@@ -19,29 +23,16 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
 
     private var internalListener: DownloadListener? = null
     private lateinit var connection: IDownloadConnection
-    private lateinit var outputStream: IOutputStream
+    private lateinit var outputStream: IDownloadStream
     private val headers: MutableMap<String, String> = HashMap()
-    private var offset: Long = -1
 
-    override var targetPath: String = ""
-    override var targetName: String = ""
-    override var url: String = ""
-    override var listener: DownloadListener? = null
-    override var status: Int
-        get() {
-            return internalStatus.get()
-        }
-        set(value) {
-            internalStatus.set(value)
-        }
-    private var internalStatus: AtomicInteger = AtomicInteger(DownloadStatus.WAIT)
-    override var id = -1
-        get() {
-            if (field < 0) {
-                field = IdGenerator.generateId(url, targetPath, targetName)
-            }
-            return field
-        }
+    private var offset: Long = -1
+    private var targetPath: String = ""
+    private var targetName: String = ""
+    private var url: String = ""
+    private var listener: DownloadListener? = null
+    private var status: AtomicInteger = AtomicInteger(DownloadStatus.WAIT)
+    private var id = -1
 
     @Volatile
     private var canceled = false
@@ -54,9 +45,9 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
             LogUtils.d(TAG, Utils.formatString("Task(id = %d) has been canceled or paused before start.", id))
             return
         }
-        status = DownloadStatus.START
+        status.set(DownloadStatus.START)
         LogUtils.i(TAG, Utils.formatString("Task(id = %d) start to be executed and save at %s", id, saveAsFile()))
-        internalListener!!.onStart(this)
+        internalListener?.onStart(this)
 
         // 连接网络、读流、写流、存库
         try {
@@ -87,7 +78,7 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
                 }
             }
             tempFile.createNewFile()
-            val out = outputStream.getOutputStream(generateTempFile())
+            val out = outputStream.getOutputStream()
             val bis = connection.getInputStream()
             val buffer = ByteArray(BUFFER_SIZE)
             var count: Int
@@ -98,7 +89,7 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
                 contentLength
             }
             // 有内容,正常读写
-            status = DownloadStatus.UPDATE
+            status.set(DownloadStatus.UPDATE)
             count = bis.read(buffer)
             while (count != -1 && !canceled && !paused) {
                 out.write(buffer, 0, count)
@@ -114,7 +105,7 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
                 }
                 paused -> {
                     out.flush()
-                    status = DownloadStatus.PAUSED
+                    status.set(DownloadStatus.PAUSED)
                     LogUtils.i(TAG, Utils.formatString("Task(id = %d) is paused.", id))
                     return
                 }
@@ -127,21 +118,52 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
                 file.delete()
             }
             Utils.renameFile(generateTempFile(), saveAsFile())
-            status = DownloadStatus.SUCCEED
-            internalListener!!.onSucceed(this)
+            status.set(DownloadStatus.SUCCEED)
+            internalListener?.onSucceed(this)
 
         } catch (e: Exception) {
-            status = DownloadStatus.FAILED
-            LogUtils.d(TAG, Utils.formatString("Task(id = %d) is failed. %s", id, e.stackTrace))
-            internalListener!!.onFailed(this, e)
+            status.set(DownloadStatus.FAILED)
+            LogUtils.e(TAG, Utils.formatString("Task(id = %d) is failed.", id), e)
+            internalListener?.onFailed(this, e)
         } finally {
             connection.close()
         }
 
     }
 
-    internal fun bindInternalListener(listener: DownloadListener) {
-        internalListener = listener
+    override fun getUrl(): String {
+        return url
+    }
+
+    override fun getId(): Int {
+        if (id < 0) {
+            id = IdGenerator.generateId(url, targetPath, targetName)
+        }
+        return id
+    }
+
+    override fun getStatus(): Int {
+        return status.get()
+    }
+
+    override fun getListener(): DownloadListener? {
+        return listener
+    }
+
+    override fun setListener(listener: DownloadListener) {
+        this@DownloadTask.listener = listener
+    }
+
+    override fun getTargetPath(): String {
+        return targetPath
+    }
+
+    override fun getTargetName(): String {
+        return targetName
+    }
+
+    override fun getOffset(): Long {
+        return offset
     }
 
     fun cancel() {
@@ -152,12 +174,8 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
         paused = true
     }
 
-    override fun equals(other: Any?): Boolean {
-        return other is DownloadTask && other.id == id
-    }
-
-    override fun hashCode(): Int {
-        return id
+    internal fun bindInternalListener(listener: DownloadListener) {
+        internalListener = listener
     }
 
     private fun generateTempFile(): String {
@@ -168,16 +186,26 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
         return String.format("%s/%s", targetPath, targetName)
     }
 
+    override fun equals(other: Any?): Boolean {
+        return other is DownloadTask && other.id == id
+    }
+
+    override fun hashCode(): Int {
+        return id
+    }
+
     class Builder {
 
         private val task: DownloadTask = DownloadTask()
+        private lateinit var connectionFactory: IDownloadConnection.Factory
+        private lateinit var streamFactory: IDownloadStream.Factory
 
-        fun connection(connection: IDownloadConnection) = apply {
-            task.connection = connection
+        fun connection(connection: IDownloadConnection.Factory) = apply {
+            this@Builder.connectionFactory = connection
         }
 
-        fun outputStream(os: IOutputStream) = apply {
-            task.outputStream = os
+        fun outputStream(streamFactory: IDownloadStream.Factory) = apply {
+            this@Builder.streamFactory = streamFactory
         }
 
         fun url(url: String) = apply {
@@ -204,7 +232,11 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
             task.offset = start
         }
 
-        fun build() = task
+        fun build(): DownloadTask {
+            task.connection = connectionFactory.createConnection(task)
+            task.outputStream = streamFactory.createDownloadStream(task)
+            return task
+        }
 
     }
 }

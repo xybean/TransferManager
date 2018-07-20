@@ -1,32 +1,33 @@
 package com.xybean.taskmanager.download.connection
 
+import com.xybean.taskmanager.download.task.IDownloadTask
 import java.io.IOException
 import java.io.InputStream
 
 /**
  * Author @xybean on 2018/7/11.
  */
-interface IDownloadConnection {
+abstract class IDownloadConnection(internal val task: IDownloadTask) {
 
     @Throws(IOException::class)
-    fun getInputStream(): InputStream
+    abstract fun getInputStream(): InputStream
 
-    fun getContentLength(): Long
+    abstract fun getContentLength(): Long
 
-    fun getRequestHeaderFields(): Map<String, String>
+    abstract fun getRequestHeaderFields(): Map<String, String>
 
-    fun getResponseHeaderFields(): Map<String, String>
+    abstract fun getResponseHeaderFields(): Map<String, String>
 
-    fun addHeader(name: String, value: String)
+    abstract fun addHeader(name: String, value: String)
 
     @Throws(Exception::class)
-    fun request(url: String)
+    abstract fun request(url: String)
 
-    fun close()
+    abstract fun close()
 
     interface Factory {
         @Throws(IOException::class)
-        fun createConnection(): IDownloadConnection
+        fun createConnection(task: IDownloadTask): IDownloadConnection
     }
 
     interface Configuration {
