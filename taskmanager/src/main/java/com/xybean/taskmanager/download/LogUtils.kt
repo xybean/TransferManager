@@ -5,7 +5,7 @@ import android.util.Log
 /**
  * Author @xybean on 2018/7/19.
  */
-object LogUtils {
+internal object LogUtils {
     private const val DEBUG = true
 
     fun d(tag: String, msg: String) {

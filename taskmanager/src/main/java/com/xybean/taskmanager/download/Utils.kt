@@ -2,14 +2,13 @@ package com.xybean.taskmanager.download
 
 import android.os.Environment
 import android.os.StatFs
-
 import java.io.File
 import java.util.*
 
 /**
  * Author @xybean on 2018/7/16.
  */
-object Utils {
+internal object Utils {
     /**
      * 获取磁盘的剩余空间
      *
@@ -85,5 +84,16 @@ object Utils {
 
     fun formatString(msg: String, vararg args: Any): String {
         return String.format(Locale.ENGLISH, msg, *args)
+    }
+
+    fun getRangeHeader(offset: Long, total: Long = -1): Pair<String, String> {
+        val range: String
+        return if (total > 0 && total > offset) {
+            range = String.format(Locale.ENGLISH, "bytes=%d-%d", offset, total)
+            Pair("Range", range)
+        } else {
+            range = String.format(Locale.ENGLISH, "bytes=%d-", offset)
+            Pair("Range", range)
+        }
     }
 }

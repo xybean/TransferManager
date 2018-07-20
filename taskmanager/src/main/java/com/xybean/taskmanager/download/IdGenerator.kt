@@ -11,6 +11,7 @@ import kotlin.experimental.and
 object IdGenerator {
 
     fun generateId(url: String, targetPath: String, targetName: String): Int {
+        // todo 修复有时候int值会溢出的问题
         return md5(url + "#" + String.format("%s/%s", targetPath, targetName)).hashCode()
     }
 

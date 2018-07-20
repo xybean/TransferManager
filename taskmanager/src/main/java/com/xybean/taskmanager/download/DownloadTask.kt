@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * Author @xybean on 2018/7/16.
  */
-class DownloadTask private constructor() : IDownloadTask, Runnable {
+internal class DownloadTask private constructor() : IDownloadTask, Runnable {
 
     companion object {
         private const val TAG = "DownloadTask"
@@ -71,19 +71,32 @@ class DownloadTask private constructor() : IDownloadTask, Runnable {
             connection.request(url)
 
             // 检查磁盘空间是否够用
-            val total = connection.getContentLength()
+            val contentLength = connection.getContentLength()
             val freeSpace = Utils.sdCardFreeSpace
-            if (freeSpace < total) {
-                throw NoEnoughSpaceException(total, freeSpace)
+            if (freeSpace < contentLength) {
+                throw NoEnoughSpaceException(contentLength, freeSpace)
             }
 
             // 读流
+            val tempFile = File(generateTempFile())
+            if (offset <= 0) {
+                if (tempFile.exists()) {
+                    LogUtils.d(TAG, Utils.formatString("task(id = %d): in order to redownload file," +
+                            "we delete file at %s firstly.", id, generateTempFile()))
+                    tempFile.delete()
+                }
+            }
+            tempFile.createNewFile()
             val out = outputStream.getOutputStream(generateTempFile())
             val bis = connection.getInputStream()
             val buffer = ByteArray(BUFFER_SIZE)
             var count: Int
             var current = if (offset > 0) offset else 0
-
+            val total = if (offset > 0) {
+                offset + contentLength
+            } else {
+                contentLength
+            }
             // 有内容,正常读写
             status = DownloadStatus.UPDATE
             count = bis.read(buffer)
