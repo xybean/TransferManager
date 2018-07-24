@@ -6,12 +6,13 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.TextView;
 
-import com.xybean.taskmanager.download.ApplicationHolder;
+import com.xybean.taskmanager.ApplicationHolder;
 import com.xybean.taskmanager.download.DownloadListener;
 import com.xybean.taskmanager.download.DownloadManager;
 import com.xybean.taskmanager.download.connection.DownloadUrlConnection;
 import com.xybean.taskmanager.download.connection.IDownloadConnection;
 import com.xybean.taskmanager.download.db.SqliteDatabaseHandler;
+import com.xybean.taskmanager.download.id.DefaultIdGenerator;
 import com.xybean.taskmanager.download.stream.DefaultDownloadStream;
 import com.xybean.taskmanager.download.stream.IDownloadStream;
 import com.xybean.taskmanager.download.task.IDownloadTask;
@@ -112,7 +113,8 @@ public class DownloadActivity extends AppCompatActivity {
                                     }
                                 });
                             }
-                        });
+                        },
+                        new DefaultIdGenerator(DOWNLOAD_URL, targetPath, "10363.mp3"));
             }
         });
 
@@ -177,7 +179,8 @@ public class DownloadActivity extends AppCompatActivity {
                                     }
                                 });
                             }
-                        });
+                        },
+                        new DefaultIdGenerator(APK_URL, targetPath, "fangcloud.apk"));
             }
         });
 

@@ -1,4 +1,4 @@
-package com.xybean.taskmanager.download
+package com.xybean.taskmanager.download.id
 
 import java.io.UnsupportedEncodingException
 import java.security.MessageDigest
@@ -6,13 +6,12 @@ import java.security.NoSuchAlgorithmException
 import kotlin.experimental.and
 
 /**
- * Author @xybean on 2018/7/18.
+ * Author @xybean on 2018/7/24.
  */
-object IdGenerator {
-
-    fun generateId(url: String, targetPath: String, targetName: String): Int {
-        // todo 修复有时候int值会溢出的问题
-        return md5(url + "#" + String.format("%s/%s", targetPath, targetName)).hashCode()
+class DefaultIdGenerator(private val url: String, private val targetPath: String,
+                         private val targetName: String) : IdGenerator {
+    override fun getId(): Int {
+        return md5("$url}#$targetPath/$targetName").hashCode()
     }
 
     private fun md5(string: String): String {
@@ -32,5 +31,4 @@ object IdGenerator {
         }
         return hex.toString()
     }
-
 }

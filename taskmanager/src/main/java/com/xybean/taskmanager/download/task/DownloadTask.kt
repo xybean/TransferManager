@@ -2,11 +2,11 @@ package com.xybean.taskmanager.download.task
 
 import android.os.SystemClock
 import com.xybean.taskmanager.download.DownloadListener
-import com.xybean.taskmanager.download.IdGenerator
 import com.xybean.taskmanager.download.LogUtils
 import com.xybean.taskmanager.download.Utils
 import com.xybean.taskmanager.download.connection.IDownloadConnection
 import com.xybean.taskmanager.download.exception.NoEnoughSpaceException
+import com.xybean.taskmanager.download.id.IdGenerator
 import com.xybean.taskmanager.download.stream.IDownloadStream
 import java.io.File
 import java.util.*
@@ -28,6 +28,7 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
         }
     }
 
+    private lateinit var idGenerator: IdGenerator
     private var internalListener: DownloadInternalListener? = null
     private lateinit var connection: IDownloadConnection
     private lateinit var outputStream: IDownloadStream
@@ -157,7 +158,7 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
 
     override fun getId(): Int {
         if (id < 0) {
-            id = IdGenerator.generateId(url, targetPath, targetName)
+            id = idGenerator.getId()
         }
         return id
     }
@@ -254,6 +255,10 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
 
         fun offset(start: Long) = apply {
             task.current = start
+        }
+
+        fun idGenerator(idGenerator: IdGenerator) = apply {
+            task.idGenerator = idGenerator
         }
 
         fun build(): DownloadTask {

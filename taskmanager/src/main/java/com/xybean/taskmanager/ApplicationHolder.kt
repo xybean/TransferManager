@@ -1,4 +1,4 @@
-package com.xybean.taskmanager.download
+package com.xybean.taskmanager
 
 import android.annotation.SuppressLint
 import android.content.Context

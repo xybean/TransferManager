@@ -4,6 +4,8 @@ import android.util.SparseArray
 import com.xybean.taskmanager.download.connection.IDownloadConnection
 import com.xybean.taskmanager.download.db.DownloadDatabaseHandler
 import com.xybean.taskmanager.download.db.DownloadTaskModel
+import com.xybean.taskmanager.download.id.DefaultIdGenerator
+import com.xybean.taskmanager.download.id.IdGenerator
 import com.xybean.taskmanager.download.stream.IDownloadStream
 import com.xybean.taskmanager.download.task.DownloadInternalListener
 import com.xybean.taskmanager.download.task.DownloadStatus
@@ -104,9 +106,11 @@ class DownloadManager private constructor() {
      * @param targetName 下载文件的文件名
      * @param forceReload 是否强制重新下载，如果为true，则不会进行断点续传，而是强制重新下载
      * @param listener
+     * @param idGenerator 任务唯一标识符的生成器
      */
-    fun download(url: String, targetPath: String, targetName: String, forceReload: Boolean, listener: DownloadListener? = null): Int {
-        val id = IdGenerator.generateId(url, targetPath, targetName)
+    fun download(url: String, targetPath: String, targetName: String, forceReload: Boolean,
+                 listener: DownloadListener? = null, idGenerator: IdGenerator = DefaultIdGenerator(url, targetPath, targetName)): Int {
+        val id = idGenerator.getId()
         synchronized(taskList) {
             val cachedTask: DownloadTask? = taskList.get(id)
             if (cachedTask != null) {
@@ -139,6 +143,7 @@ class DownloadManager private constructor() {
                                 .addHeader(header.first, header.second)
                                 .connection(connectionFactory)
                                 .outputStream(streamFactory)
+                                .idGenerator(idGenerator)
                                 .build()
                     }
 
@@ -150,6 +155,7 @@ class DownloadManager private constructor() {
                                 .targetName(targetName)
                                 .connection(connectionFactory)
                                 .outputStream(streamFactory)
+                                .idGenerator(idGenerator)
                                 .build()
                     }
 

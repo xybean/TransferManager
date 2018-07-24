@@ -3,7 +3,7 @@ package com.xybean.taskmanager.download.db
 import android.content.ContentValues
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
-import com.xybean.taskmanager.download.ApplicationHolder
+import com.xybean.taskmanager.ApplicationHolder
 import com.xybean.taskmanager.download.db.DownloadTaskModel.Companion.TABLE_NAME
 import com.xybean.taskmanager.download.task.DownloadStatus
 import com.xybean.taskmanager.executor.TaskExecutor
