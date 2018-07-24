@@ -1,5 +1,6 @@
 package com.xybean.taskmanager.download.task
 
+import android.os.SystemClock
 import com.xybean.taskmanager.download.DownloadListener
 import com.xybean.taskmanager.download.IdGenerator
 import com.xybean.taskmanager.download.LogUtils
@@ -16,12 +17,18 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 internal class DownloadTask private constructor() : IDownloadTask, Runnable {
 
-    companion object {
+    private companion object {
         private const val TAG = "DownloadTask"
         private const val BUFFER_SIZE = 1024
+        private const val minProgressStep = 65536
+        private const val minProgressTime: Long = 2000
+
+        fun isNeedSync(bytesDelta: Long, timestampDelta: Long): Boolean {
+            return bytesDelta > minProgressStep && timestampDelta > minProgressTime
+        }
     }
 
-    private var internalListener: DownloadListener? = null
+    private var internalListener: DownloadInternalListener? = null
     private lateinit var connection: IDownloadConnection
     private lateinit var outputStream: IDownloadStream
     private val headers: MutableMap<String, String> = HashMap()
@@ -77,6 +84,8 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
                             "we delete file at ${generateTempFile()} firstly.")
                     tempFile.delete()
                 }
+            } else {
+                LogUtils.i(TAG, "task(id = $id): download file by range($current).")
             }
             tempFile.createNewFile()
             val out = outputStream.getOutputStream()
@@ -91,11 +100,22 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
             // 有内容,正常读写
             status.set(DownloadStatus.UPDATE)
             count = bis.read(buffer)
+            var lastSyncBytes = current
+            var lastSyncTimestamp = SystemClock.elapsedRealtime()
             while (count != -1 && !canceled && !paused) {
                 out.write(buffer, 0, count)
                 current += count.toLong()
                 // 更新数据库
-                internalListener?.onUpdate(this)
+                val now = SystemClock.elapsedRealtime()
+                val bytesDelta = current - lastSyncBytes
+                val timestampDelta = now - lastSyncTimestamp
+                if (isNeedSync(bytesDelta, timestampDelta)) {
+                    internalListener?.onUpdate(this, true)
+                    lastSyncBytes = current
+                    lastSyncTimestamp = now
+                } else {
+                    internalListener?.onUpdate(this, false)
+                }
                 count = bis.read(buffer)
             }
             when {
@@ -178,7 +198,7 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
         paused = true
     }
 
-    internal fun bindInternalListener(listener: DownloadListener) {
+    internal fun bindInternalListener(listener: DownloadInternalListener) {
         internalListener = listener
     }
 

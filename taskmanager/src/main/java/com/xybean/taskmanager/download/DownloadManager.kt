@@ -5,6 +5,7 @@ import com.xybean.taskmanager.download.connection.IDownloadConnection
 import com.xybean.taskmanager.download.db.DownloadDatabaseHandler
 import com.xybean.taskmanager.download.db.DownloadTaskModel
 import com.xybean.taskmanager.download.stream.IDownloadStream
+import com.xybean.taskmanager.download.task.DownloadInternalListener
 import com.xybean.taskmanager.download.task.DownloadStatus
 import com.xybean.taskmanager.download.task.DownloadTask
 import com.xybean.taskmanager.download.task.IDownloadTask
@@ -21,7 +22,7 @@ class DownloadManager private constructor() {
         const val TAG = "DownloadManager"
     }
 
-    private val internalExecutor = TaskExecutor("DownloadManagerInternal", 1)
+    private val dbExecutor = TaskExecutor("DownloadManagerDbExecutor", 1)
 
     private lateinit var executor: Executor
     private lateinit var dbHandler: DownloadDatabaseHandler
@@ -30,26 +31,36 @@ class DownloadManager private constructor() {
 
     private val taskList: SparseArray<DownloadTask> = SparseArray()
 
-    private val internalListener = object : DownloadListener {
+    private val internalListener = object : DownloadInternalListener {
         override fun onStart(task: IDownloadTask) {
-            synchronized(taskList) {
-                dbHandler.replace(DownloadTaskModel().apply {
-                    id = task.getId()
-                    url = task.getUrl()
-                    targetPath = task.getTargetPath()
-                    targetName = task.getTargetName()
-                    status = DownloadStatus.START
-                    current = 0
-                    total = 0
-                })
-            }
+            dbExecutor.execute(object : BaseTask<Void?>() {
+                override fun execute(): Void? {
+                    dbHandler.replace(DownloadTaskModel().apply {
+                        id = task.getId()
+                        url = task.getUrl()
+                        targetPath = task.getTargetPath()
+                        targetName = task.getTargetName()
+                        status = DownloadStatus.START
+                        current = 0
+                        total = 0
+                    })
+                    return null
+                }
+            })
             val listener = task.getListener()
             listener?.onStart(task)
         }
 
-        override fun onUpdate(task: IDownloadTask) {
+        override fun onUpdate(task: IDownloadTask, sync: Boolean) {
             val listener = task.getListener()
-            dbHandler.updateProgress(task.getId(), task.getCurrent(), task.getTotal())
+            if (sync) {
+                dbExecutor.execute(object : BaseTask<Void?>() {
+                    override fun execute(): Void? {
+                        dbHandler.updateProgress(task.getId(), task.getCurrent(), task.getTotal())
+                        return null
+                    }
+                })
+            }
             listener?.onUpdate(task)
         }
 
@@ -59,7 +70,12 @@ class DownloadManager private constructor() {
                 LogUtils.i(TAG, "download succeed and remove a Task(id = ${task.getId()})," +
                         " TaskList's size is ${taskList.size()} now.")
             }
-            dbHandler.remove(task.getId())
+            dbExecutor.execute(object : BaseTask<Void?>() {
+                override fun execute(): Void? {
+                    dbHandler.remove(task.getId())
+                    return null
+                }
+            })
             val listener = task.getListener()
             listener?.onSucceed(task)
         }
@@ -70,7 +86,12 @@ class DownloadManager private constructor() {
                 LogUtils.i(TAG, "download failed and remove a Task(id = ${task.getId()})," +
                         " TaskList's size is ${taskList.size()} now.")
             }
-            dbHandler.updateFailed(task.getId(), e)
+            dbExecutor.execute(object : BaseTask<Void?>() {
+                override fun execute(): Void? {
+                    dbHandler.updateFailed(task.getId(), e)
+                    return null
+                }
+            })
             val listener = task.getListener()
             listener?.onFailed(task, e)
         }
@@ -99,7 +120,7 @@ class DownloadManager private constructor() {
         }
 
         // 如果内存中不存在正在执行的任务，则尝试从磁盘中读取
-        internalExecutor.execute(object : BaseTask<Void?>() {
+        dbExecutor.execute(object : BaseTask<Void?>() {
             override fun execute(): Void? {
                 synchronized(taskList) {
                     if (forceReload) {
@@ -161,7 +182,7 @@ class DownloadManager private constructor() {
                 taskList.remove(id)
                 LogUtils.i(TAG, "cancel and remove a Task(id = ${task.getId()}), TaskList's size is ${taskList.size()} now.")
             }
-            internalExecutor.execute(object : BaseTask<Void?>() {
+            dbExecutor.execute(object : BaseTask<Void?>() {
                 override fun execute(): Void? {
                     dbHandler.remove(task.getId())
                     return null

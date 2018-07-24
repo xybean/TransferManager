@@ -136,7 +136,7 @@ public class DownloadActivity extends AppCompatActivity {
                 id2 = manager.download(APK_URL,
                         targetPath,
                         "fangcloud.apk",
-                        true,
+                        false,
                         new DownloadListener() {
                             @Override
                             public void onStart(IDownloadTask task) {

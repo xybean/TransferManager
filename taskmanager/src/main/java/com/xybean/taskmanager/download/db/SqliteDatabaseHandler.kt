@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase
 import com.xybean.taskmanager.download.ApplicationHolder
 import com.xybean.taskmanager.download.db.DownloadTaskModel.Companion.TABLE_NAME
 import com.xybean.taskmanager.download.task.DownloadStatus
+import com.xybean.taskmanager.executor.TaskExecutor
 
 /**
  * Author @xybean on 2018/7/16.
@@ -13,6 +14,7 @@ import com.xybean.taskmanager.download.task.DownloadStatus
 class SqliteDatabaseHandler : DownloadDatabaseHandler {
 
     private val db: SQLiteDatabase
+    private val dbExecutor = TaskExecutor("SqliteDatabaseExecutor", 1)
 
     private val lock = Any()
 
