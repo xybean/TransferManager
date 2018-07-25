@@ -12,13 +12,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        findViewById(R.id.btn_task_manager).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(MainActivity.this, TestTaskActivity.class));
-            }
-        });
-
         findViewById(R.id.btn_test_download).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

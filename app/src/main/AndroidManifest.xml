@@ -18,8 +18,6 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity android:name=".TestTaskActivity">
-        </activity>
         <activity android:name=".DownloadActivity">
         </activity>
     </application>

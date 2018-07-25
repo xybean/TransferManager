@@ -1,1 +1,1 @@
-include ':app', ':taskmanager'
+include ':app', ':transfermanager'

@@ -6,16 +6,16 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.TextView;
 
-import com.xybean.taskmanager.ApplicationHolder;
-import com.xybean.taskmanager.download.DownloadListener;
-import com.xybean.taskmanager.download.DownloadManager;
-import com.xybean.taskmanager.download.connection.DownloadUrlConnection;
-import com.xybean.taskmanager.download.connection.IDownloadConnection;
-import com.xybean.taskmanager.download.db.SqliteDatabaseHandler;
-import com.xybean.taskmanager.download.id.DefaultIdGenerator;
-import com.xybean.taskmanager.download.stream.DefaultDownloadStream;
-import com.xybean.taskmanager.download.stream.IDownloadStream;
-import com.xybean.taskmanager.download.task.IDownloadTask;
+import com.xybean.transfermanager.ApplicationHolder;
+import com.xybean.transfermanager.download.DownloadListener;
+import com.xybean.transfermanager.download.DownloadManager;
+import com.xybean.transfermanager.download.connection.DownloadUrlConnection;
+import com.xybean.transfermanager.download.connection.IDownloadConnection;
+import com.xybean.transfermanager.download.db.SqliteDatabaseHandler;
+import com.xybean.transfermanager.download.id.DefaultIdGenerator;
+import com.xybean.transfermanager.download.stream.DefaultDownloadStream;
+import com.xybean.transfermanager.download.stream.IDownloadStream;
+import com.xybean.transfermanager.download.task.IDownloadTask;
 
 import java.io.IOException;
 import java.util.concurrent.Executors;
