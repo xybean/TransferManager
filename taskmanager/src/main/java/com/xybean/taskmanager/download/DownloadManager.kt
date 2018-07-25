@@ -20,7 +20,7 @@ import java.util.concurrent.Executor
  */
 class DownloadManager private constructor() {
 
-    companion object {
+    private companion object {
         const val TAG = "DownloadManager"
     }
 

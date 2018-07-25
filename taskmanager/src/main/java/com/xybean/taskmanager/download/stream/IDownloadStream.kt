@@ -11,6 +11,8 @@ abstract class IDownloadStream(internal val task: IDownloadTask) {
     @Throws(Exception::class)
     abstract fun getOutputStream(): OutputStream
 
+    abstract fun close()
+
     interface Factory {
         fun createDownloadStream(task: IDownloadTask): IDownloadStream
     }

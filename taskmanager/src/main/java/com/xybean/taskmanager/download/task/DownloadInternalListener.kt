@@ -3,7 +3,7 @@ package com.xybean.taskmanager.download.task
 /**
  * Author @xybean on 2018/7/24.
  */
-interface DownloadInternalListener {
+internal interface DownloadInternalListener {
     fun onStart(task: IDownloadTask)
 
     fun onUpdate(task: IDownloadTask, sync: Boolean)

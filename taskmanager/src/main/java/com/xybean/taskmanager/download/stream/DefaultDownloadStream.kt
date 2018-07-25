@@ -8,10 +8,12 @@ import java.io.*
  */
 class DefaultDownloadStream(task: IDownloadTask) : IDownloadStream(task) {
 
+    private var outputStream: OutputStream? = null
+
     @Throws(IOException::class)
     override fun getOutputStream(): OutputStream {
         val path = task.getTargetPath() + File.separator + task.getTargetName()
-        return if (task.getCurrent() > 0) {
+        outputStream = if (task.getCurrent() > 0) {
             val file = File(path)
             if (!file.exists()) {
                 throw FileNotFoundException("if you want to access file by offset("
@@ -24,6 +26,11 @@ class DefaultDownloadStream(task: IDownloadTask) : IDownloadStream(task) {
         } else {
             BufferedOutputStream(FileOutputStream(path))
         }
+        return outputStream!!
+    }
+
+    override fun close() {
+        outputStream?.close()
     }
 
 }
