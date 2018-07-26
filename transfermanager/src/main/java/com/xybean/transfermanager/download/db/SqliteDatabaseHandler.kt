@@ -5,7 +5,6 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import com.xybean.transfermanager.ApplicationHolder
 import com.xybean.transfermanager.download.task.DownloadStatus
-import com.xybean.transfermanager.executor.TaskExecutor
 
 /**
  * Author @xybean on 2018/7/16.
@@ -13,7 +12,6 @@ import com.xybean.transfermanager.executor.TaskExecutor
 class SqliteDatabaseHandler : DownloadDatabaseHandler {
 
     private val db: SQLiteDatabase
-    private val dbExecutor = TaskExecutor("SqliteDatabaseExecutor", 1)
 
     private val lock = Any()
 

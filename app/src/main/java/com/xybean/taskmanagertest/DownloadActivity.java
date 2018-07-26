@@ -7,6 +7,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.xybean.transfermanager.ApplicationHolder;
+import com.xybean.transfermanager.download.DownloadConfig;
 import com.xybean.transfermanager.download.DownloadListener;
 import com.xybean.transfermanager.download.DownloadManager;
 import com.xybean.transfermanager.download.connection.DownloadUrlConnection;
@@ -72,7 +73,6 @@ public class DownloadActivity extends AppCompatActivity {
                 id1 = manager.download(DOWNLOAD_URL,
                         targetPath,
                         "10363.mp3",
-                        false,
                         new DownloadListener() {
                             @Override
                             public void onStart(@NonNull IDownloadTask task) {
@@ -114,7 +114,9 @@ public class DownloadActivity extends AppCompatActivity {
                                 });
                             }
                         },
-                        new DefaultIdGenerator(DOWNLOAD_URL, targetPath, "10363.mp3"));
+                        new DownloadConfig.Builder()
+                                .idGenerator(new DefaultIdGenerator(DOWNLOAD_URL, targetPath, "10363.mp3"))
+                                .build());
             }
         });
 
@@ -138,7 +140,6 @@ public class DownloadActivity extends AppCompatActivity {
                 id2 = manager.download(APK_URL,
                         targetPath,
                         "fangcloud.apk",
-                        false,
                         new DownloadListener() {
                             @Override
                             public void onStart(IDownloadTask task) {
@@ -180,7 +181,9 @@ public class DownloadActivity extends AppCompatActivity {
                                 });
                             }
                         },
-                        new DefaultIdGenerator(APK_URL, targetPath, "fangcloud.apk"));
+                        new DownloadConfig.Builder()
+                                .idGenerator(new DefaultIdGenerator(APK_URL, targetPath, "fangcloud.apk"))
+                                .build());
             }
         });
 

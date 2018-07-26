@@ -7,7 +7,7 @@ import java.io.InputStream
 /**
  * Author @xybean on 2018/7/24.
  */
-abstract class IUploadStream(internal val task: IUploadTask) {
+abstract class IUploadStream(protected val task: IUploadTask) {
 
     @Throws(IOException::class)
     abstract fun getInputStream(): InputStream

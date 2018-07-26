@@ -6,7 +6,7 @@ import java.io.InputStream
 /**
  * Author @xybean on 2018/7/24.
  */
-abstract class IUploadConnection(internal val task: IUploadTask, protected val config: Configuration? = null) {
+abstract class IUploadConnection(protected val task: IUploadTask, protected val config: Configuration? = null) {
 
     abstract fun getInputStream(): InputStream
 

@@ -7,7 +7,6 @@ import com.xybean.transfermanager.Utils
 import com.xybean.transfermanager.download.connection.IDownloadConnection
 import com.xybean.transfermanager.download.db.DownloadDatabaseHandler
 import com.xybean.transfermanager.download.db.DownloadTaskModel
-import com.xybean.transfermanager.download.id.DefaultIdGenerator
 import com.xybean.transfermanager.download.stream.IDownloadStream
 import com.xybean.transfermanager.download.task.DownloadInternalListener
 import com.xybean.transfermanager.download.task.DownloadStatus
@@ -30,8 +29,9 @@ class DownloadManager private constructor() {
 
     private lateinit var executor: Executor
     private lateinit var dbHandler: DownloadDatabaseHandler
-    private lateinit var connectionFactory: IDownloadConnection.Factory
-    private lateinit var streamFactory: IDownloadStream.Factory
+    private var connectionFactory: IDownloadConnection.Factory? = null
+    private var streamFactory: IDownloadStream.Factory? = null
+    private var idGenerator: IdGenerator? = null
 
     private val taskList: SparseArray<DownloadTask> = SparseArray()
 
@@ -45,8 +45,8 @@ class DownloadManager private constructor() {
                         targetPath = task.getTargetPath()
                         targetName = task.getTargetName()
                         status = DownloadStatus.START
-                        current = 0
-                        total = 0
+                        current = task.getCurrent()
+                        total = task.getTotal()
                     })
                     return null
                 }
@@ -106,13 +106,17 @@ class DownloadManager private constructor() {
      * @param url 目标url
      * @param targetPath 下载文件后的存储目录
      * @param targetName 下载文件的文件名
-     * @param forceReload 是否强制重新下载，如果为true，则不会进行断点续传，而是强制重新下载
      * @param listener
-     * @param idGenerator 任务唯一标识符的生成器
+     * @param config
      */
-    fun download(url: String, targetPath: String, targetName: String, forceReload: Boolean,
-                 listener: DownloadListener? = null, idGenerator: IdGenerator = DefaultIdGenerator(url, targetPath, targetName)): Int {
-        val id = idGenerator.getId()
+    fun download(url: String, targetPath: String, targetName: String, listener: DownloadListener? = null, config: DownloadConfig): Int {
+
+        val id = if (config.idGenerator == null) {
+            idGenerator!!.getId()
+        } else {
+            config.idGenerator!!.getId()
+        }
+
         synchronized(taskList) {
             val cachedTask: DownloadTask? = taskList.get(id)
             if (cachedTask != null) {
@@ -129,23 +133,41 @@ class DownloadManager private constructor() {
         dbExecutor.execute(object : BaseTask<Void?>() {
             override fun execute(): Void? {
                 synchronized(taskList) {
-                    if (forceReload) {
+                    if (config.forceReload) {
                         dbHandler.remove(id)
                     }
                     var task: DownloadTask? = null
                     val model = dbHandler.find(id)
                     if (model != null) {
+
+                        // 优先处理config配置的偏移量
+                        if (config.offset > 0) {
+                            Logger.d(TAG, "task(id = $id) is cached, but client reset offset, so we will update cache first.")
+                            dbHandler.updateProgress(id, config.offset, model.total)
+                        }
                         // 如果之前有下载记录，则恢复记录
                         val header = Utils.getRangeHeader(model.current)
                         task = DownloadTask.Builder()
                                 .url(model.url)
                                 .targetPath(model.targetPath)
                                 .targetName(model.targetName)
-                                .offset(model.current)
+                                .offset(if (config.offset > 0) {
+                                    config.offset
+                                } else {
+                                    model.current
+                                })
                                 .addHeader(header.first, header.second)
-                                .connection(connectionFactory)
-                                .outputStream(streamFactory)
-                                .idGenerator(idGenerator)
+                                .connection(if (config.connectionFactory == null) {
+                                    connectionFactory!!
+                                } else {
+                                    config.connectionFactory!!
+                                })
+                                .outputStream(if (config.streamFactory == null) {
+                                    streamFactory!!
+                                } else {
+                                    config.streamFactory!!
+                                })
+                                .idGenerator(config.idGenerator!!)
                                 .build()
                     }
 
@@ -155,9 +177,22 @@ class DownloadManager private constructor() {
                                 .url(url)
                                 .targetPath(targetPath)
                                 .targetName(targetName)
-                                .connection(connectionFactory)
-                                .outputStream(streamFactory)
-                                .idGenerator(idGenerator)
+                                .offset(if (config.offset > 0) {
+                                    config.offset
+                                } else {
+                                    0
+                                })
+                                .connection(if (config.connectionFactory == null) {
+                                    connectionFactory!!
+                                } else {
+                                    config.connectionFactory!!
+                                })
+                                .outputStream(if (config.streamFactory == null) {
+                                    streamFactory!!
+                                } else {
+                                    config.streamFactory!!
+                                })
+                                .idGenerator(config.idGenerator!!)
                                 .build()
                     }
 
@@ -233,6 +268,10 @@ class DownloadManager private constructor() {
 
         fun stream(streamFactory: IDownloadStream.Factory) = apply {
             manager.streamFactory = streamFactory
+        }
+
+        fun idGenerator(idGenerator: IdGenerator) = apply {
+            manager.idGenerator = idGenerator
         }
 
         fun debug(debug: Boolean) = apply {

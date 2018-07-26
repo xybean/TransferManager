@@ -7,7 +7,7 @@ import java.io.InputStream
 /**
  * Author @xybean on 2018/7/11.
  */
-abstract class IDownloadConnection(internal val task: IDownloadTask,
+abstract class IDownloadConnection(protected val task: IDownloadTask,
                                    protected val config: IDownloadConnection.Configuration? = null) {
 
     @Throws(IOException::class)
