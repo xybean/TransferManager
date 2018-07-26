@@ -1,7 +1,7 @@
 package com.xybean.transfermanager.upload.task
 
-import com.xybean.transfermanager.LogUtils
-import com.xybean.transfermanager.download.id.IdGenerator
+import com.xybean.transfermanager.IdGenerator
+import com.xybean.transfermanager.Logger
 import com.xybean.transfermanager.upload.UploadListener
 import com.xybean.transfermanager.upload.connection.IUploadConnection
 import com.xybean.transfermanager.upload.stream.IUploadStream
@@ -43,11 +43,11 @@ class UploadTask private constructor() : IUploadTask, Runnable {
 
     override fun run() {
         if (canceled || paused) {
-            LogUtils.d(TAG, "UploadTask(id = $id) has been canceled or paused before start.")
+            Logger.d(TAG, "UploadTask(id = $id) has been canceled or paused before start.")
             return
         }
         status.set(UploadStatus.START)
-        LogUtils.i(TAG, "UploadTask(id = $id) start to upload file at $sourcePath")
+        Logger.i(TAG, "UploadTask(id = $id) start to upload file at $sourcePath")
         internalListener?.onStart(this)
 
         try {
@@ -72,13 +72,13 @@ class UploadTask private constructor() : IUploadTask, Runnable {
             }
             when {
                 canceled -> {
-                    LogUtils.i(TAG, "UploadTask(id = $id) is canceled.")
+                    Logger.i(TAG, "UploadTask(id = $id) is canceled.")
                     return
                 }
                 paused -> {
                     connection.flush()
                     status.set(UploadStatus.PAUSED)
-                    LogUtils.i(TAG, "UploadTask(id = $id) is paused.")
+                    Logger.i(TAG, "UploadTask(id = $id) is paused.")
                     return
                 }
                 else -> connection.flush()
@@ -93,7 +93,7 @@ class UploadTask private constructor() : IUploadTask, Runnable {
             }
         } catch (e: Exception) {
             status.set(UploadStatus.FAILED)
-            LogUtils.e(TAG, "Task(id = $id) is failed.", e)
+            Logger.e(TAG, "Task(id = $id) is failed.", e)
             internalListener?.onFailed(this, e)
         } finally {
             connection.close()

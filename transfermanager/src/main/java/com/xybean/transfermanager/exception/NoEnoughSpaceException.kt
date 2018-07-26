@@ -1,4 +1,4 @@
-package com.xybean.transfermanager.download.exception
+package com.xybean.transfermanager.exception
 
 import java.util.*
 

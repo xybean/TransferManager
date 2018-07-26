@@ -1,4 +1,4 @@
-package com.xybean.transfermanager.download.id
+package com.xybean.transfermanager
 
 /**
  * Author @xybean on 2018/7/24.

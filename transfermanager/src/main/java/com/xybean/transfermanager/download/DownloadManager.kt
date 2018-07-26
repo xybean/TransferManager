@@ -1,13 +1,13 @@
 package com.xybean.transfermanager.download
 
 import android.util.SparseArray
-import com.xybean.transfermanager.LogUtils
+import com.xybean.transfermanager.IdGenerator
+import com.xybean.transfermanager.Logger
 import com.xybean.transfermanager.Utils
 import com.xybean.transfermanager.download.connection.IDownloadConnection
 import com.xybean.transfermanager.download.db.DownloadDatabaseHandler
 import com.xybean.transfermanager.download.db.DownloadTaskModel
 import com.xybean.transfermanager.download.id.DefaultIdGenerator
-import com.xybean.transfermanager.download.id.IdGenerator
 import com.xybean.transfermanager.download.stream.IDownloadStream
 import com.xybean.transfermanager.download.task.DownloadInternalListener
 import com.xybean.transfermanager.download.task.DownloadStatus
@@ -71,7 +71,7 @@ class DownloadManager private constructor() {
         override fun onSucceed(task: IDownloadTask) {
             synchronized(taskList) {
                 taskList.remove(task.getId())
-                LogUtils.i(TAG, "download succeed and remove a Task(id = ${task.getId()})," +
+                Logger.i(TAG, "download succeed and remove a Task(id = ${task.getId()})," +
                         " TaskList's size is ${taskList.size()} now.")
             }
             dbExecutor.execute(object : BaseTask<Void?>() {
@@ -87,7 +87,7 @@ class DownloadManager private constructor() {
         override fun onFailed(task: IDownloadTask, e: Exception) {
             synchronized(taskList) {
                 taskList.remove(task.getId())
-                LogUtils.i(TAG, "download failed and remove a Task(id = ${task.getId()})," +
+                Logger.i(TAG, "download failed and remove a Task(id = ${task.getId()})," +
                         " TaskList's size is ${taskList.size()} now.")
             }
             dbExecutor.execute(object : BaseTask<Void?>() {
@@ -117,7 +117,7 @@ class DownloadManager private constructor() {
             val cachedTask: DownloadTask? = taskList.get(id)
             if (cachedTask != null) {
                 // 如果已经在执行或者正在等待执行，则重新绑定监听后直接返回
-                LogUtils.d(TAG, "task(id = ${cachedTask.getId()}) is executing now, so we won't start it twice.")
+                Logger.d(TAG, "task(id = ${cachedTask.getId()}) is executing now, so we won't start it twice.")
                 if (listener != null) {
                     cachedTask.setListener(listener)
                 }
@@ -166,7 +166,7 @@ class DownloadManager private constructor() {
                     }
                     task.bindInternalListener(internalListener)
                     taskList.put(id, task)
-                    LogUtils.i(TAG, "insert a new Task(id = ${task.getId()}), TaskList's size is ${taskList.size()} now.")
+                    Logger.i(TAG, "insert a new Task(id = ${task.getId()}), TaskList's size is ${taskList.size()} now.")
 
                     executor.execute(task)
                     return null
@@ -188,7 +188,7 @@ class DownloadManager private constructor() {
             if (task != null) {
                 task.cancel()
                 taskList.remove(id)
-                LogUtils.i(TAG, "cancel and remove a Task(id = ${task.getId()}), TaskList's size is ${taskList.size()} now.")
+                Logger.i(TAG, "cancel and remove a Task(id = ${task.getId()}), TaskList's size is ${taskList.size()} now.")
             }
             dbExecutor.execute(object : BaseTask<Void?>() {
                 override fun execute(): Void? {
@@ -209,7 +209,7 @@ class DownloadManager private constructor() {
             if (task != null) {
                 task.pause()
                 taskList.remove(id)
-                LogUtils.i(TAG, "pause and remove a Task(id = ${task.getId()}), " +
+                Logger.i(TAG, "pause and remove a Task(id = ${task.getId()}), " +
                         "TaskList's size is ${taskList.size()} now.")
             }
         }
@@ -236,7 +236,7 @@ class DownloadManager private constructor() {
         }
 
         fun debug(debug: Boolean) = apply {
-            LogUtils.DEBUG = debug
+            Logger.DEBUG = debug
         }
 
         fun build() = manager

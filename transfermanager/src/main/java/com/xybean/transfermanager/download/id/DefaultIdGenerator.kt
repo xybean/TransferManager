@@ -1,5 +1,6 @@
 package com.xybean.transfermanager.download.id
 
+import com.xybean.transfermanager.IdGenerator
 import java.io.UnsupportedEncodingException
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException

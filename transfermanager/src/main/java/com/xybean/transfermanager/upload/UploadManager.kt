@@ -1,8 +1,8 @@
 package com.xybean.transfermanager.upload
 
 import android.util.SparseArray
-import com.xybean.transfermanager.LogUtils
-import com.xybean.transfermanager.download.id.IdGenerator
+import com.xybean.transfermanager.IdGenerator
+import com.xybean.transfermanager.Logger
 import com.xybean.transfermanager.upload.connection.IUploadConnection
 import com.xybean.transfermanager.upload.stream.IUploadStream
 import com.xybean.transfermanager.upload.task.IUploadTask
@@ -40,7 +40,7 @@ class UploadManager private constructor() {
             synchronized(taskList) {
                 taskList.remove(task.getId())
             }
-            LogUtils.i(TAG, "upload succeed and remove a Task(id = ${task.getId()})," +
+            Logger.i(TAG, "upload succeed and remove a Task(id = ${task.getId()})," +
                     " TaskList's size is ${taskList.size()} now.")
             val listener = task.getListener()
             listener?.onSucceed(task, response)
@@ -50,7 +50,7 @@ class UploadManager private constructor() {
             synchronized(taskList) {
                 taskList.remove(task.getId())
             }
-            LogUtils.i(TAG, "upload failed and remove a Task(id = ${task.getId()})," +
+            Logger.i(TAG, "upload failed and remove a Task(id = ${task.getId()})," +
                     " TaskList's size is ${taskList.size()} now.")
             val listener = task.getListener()
             listener?.onFailed(task, e)
@@ -64,7 +64,7 @@ class UploadManager private constructor() {
             val cachedTask: UploadTask? = taskList.get(id)
             if (cachedTask != null) {
                 // 如果已经在执行或者正在等待执行，则重新绑定监听后直接返回
-                LogUtils.d(TAG, "task(id = ${cachedTask.getId()}) is executing now, so we won't start it twice.")
+                Logger.d(TAG, "task(id = ${cachedTask.getId()}) is executing now, so we won't start it twice.")
                 if (listener != null) {
                     cachedTask.setListener(listener)
                 }
@@ -117,7 +117,7 @@ class UploadManager private constructor() {
         }
 
         fun debug(debug: Boolean) = apply {
-            LogUtils.DEBUG = debug
+            Logger.DEBUG = debug
         }
 
         fun build() = manager

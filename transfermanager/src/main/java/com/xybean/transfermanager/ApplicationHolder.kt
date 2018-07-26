@@ -2,7 +2,6 @@ package com.xybean.transfermanager
 
 import android.annotation.SuppressLint
 import android.content.Context
-import java.lang.IllegalArgumentException
 
 /**
  * Author @xybean on 2018/7/18.
@@ -18,7 +17,7 @@ object ApplicationHolder {
 
     fun getAppContext(): Context {
         if (APP_CONTEXT == null) {
-            throw IllegalArgumentException("You should call TransferHelper.holdContext() first!")
+            throw IllegalStateException("You should call TransferHelper.holdContext() first!")
         }
         return APP_CONTEXT!!
     }

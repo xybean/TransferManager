@@ -5,7 +5,7 @@ import android.util.Log
 /**
  * Author @xybean on 2018/7/19.
  */
-internal object LogUtils {
+internal object Logger {
     var DEBUG = false
 
     fun d(tag: String, msg: String) {

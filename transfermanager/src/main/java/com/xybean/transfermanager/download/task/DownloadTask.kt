@@ -1,13 +1,13 @@
 package com.xybean.transfermanager.download.task
 
 import android.os.SystemClock
-import com.xybean.transfermanager.download.DownloadListener
-import com.xybean.transfermanager.LogUtils
+import com.xybean.transfermanager.IdGenerator
+import com.xybean.transfermanager.Logger
 import com.xybean.transfermanager.Utils
+import com.xybean.transfermanager.download.DownloadListener
 import com.xybean.transfermanager.download.connection.IDownloadConnection
-import com.xybean.transfermanager.download.exception.NoEnoughSpaceException
-import com.xybean.transfermanager.download.id.IdGenerator
 import com.xybean.transfermanager.download.stream.IDownloadStream
+import com.xybean.transfermanager.exception.NoEnoughSpaceException
 import java.io.File
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
@@ -51,11 +51,11 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
     override fun run() {
 
         if (canceled || paused) {
-            LogUtils.d(TAG, "Task(id = $id) has been canceled or paused before start.")
+            Logger.d(TAG, "Task(id = $id) has been canceled or paused before start.")
             return
         }
         status.set(DownloadStatus.START)
-        LogUtils.i(TAG, "Task(id = $id) start to be executed and save at ${saveAsFile()}")
+        Logger.i(TAG, "Task(id = $id) start to be executed and save at ${saveAsFile()}")
         internalListener?.onStart(this)
 
         // 连接网络、读流、写流、存库
@@ -81,12 +81,12 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
             val tempFile = File(generateTempFile())
             if (current <= 0) {
                 if (tempFile.exists()) {
-                    LogUtils.d(TAG, "task(id = $id): in order to redownload file," +
+                    Logger.d(TAG, "task(id = $id): in order to redownload file," +
                             "we delete file at ${generateTempFile()} firstly.")
                     tempFile.delete()
                 }
             } else {
-                LogUtils.i(TAG, "task(id = $id): download file by range($current).")
+                Logger.i(TAG, "task(id = $id): download file by range($current).")
             }
             tempFile.createNewFile()
             val out = outputStream.getOutputStream()
@@ -121,13 +121,13 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
             }
             when {
                 canceled -> {
-                    LogUtils.i(TAG, "Task(id = $id) is canceled.")
+                    Logger.i(TAG, "Task(id = $id) is canceled.")
                     return
                 }
                 paused -> {
                     out.flush()
                     status.set(DownloadStatus.PAUSED)
-                    LogUtils.i(TAG, "Task(id = $id) is paused.")
+                    Logger.i(TAG, "Task(id = $id) is paused.")
                     return
                 }
                 else -> out.flush()
@@ -144,7 +144,7 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
 
         } catch (e: Exception) {
             status.set(DownloadStatus.FAILED)
-            LogUtils.e(TAG, "Task(id = $id) is failed.", e)
+            Logger.e(TAG, "Task(id = $id) is failed.", e)
             internalListener?.onFailed(this, e)
         } finally {
             connection.close()
