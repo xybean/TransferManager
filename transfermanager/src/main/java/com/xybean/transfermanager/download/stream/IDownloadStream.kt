@@ -9,7 +9,7 @@ import java.io.OutputStream
 abstract class IDownloadStream(protected val task: IDownloadTask) {
 
     @Throws(Exception::class)
-    abstract fun getOutputStream(): OutputStream
+    abstract fun getOutputStream(path: String): OutputStream
 
     abstract fun close()
 

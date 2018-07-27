@@ -88,8 +88,8 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
             } else {
                 Logger.i(TAG, "task(id = $id): download file by range($current).")
             }
-            tempFile.createNewFile()
-            val out = outputStream.getOutputStream()
+            Utils.checkAndCreateFile(tempFile)
+            val out = outputStream.getOutputStream(generateTempFile())
             val bis = connection.getInputStream()
             val buffer = ByteArray(BUFFER_SIZE)
             var count: Int
@@ -148,6 +148,7 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
             internalListener?.onFailed(this, e)
         } finally {
             connection.close()
+            outputStream.close()
         }
 
     }

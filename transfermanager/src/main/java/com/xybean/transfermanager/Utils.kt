@@ -3,6 +3,7 @@ package com.xybean.transfermanager
 import android.os.Environment
 import android.os.StatFs
 import java.io.File
+import java.io.IOException
 
 /**
  * Author @xybean on 2018/7/16.
@@ -78,6 +79,17 @@ internal object Utils {
         }
 
         return false
+    }
+
+    @Throws(IOException::class)
+    fun checkAndCreateFile(file: File) {
+        val parentFile = file.parentFile
+        if (!parentFile.exists()) {
+            parentFile.mkdirs()
+        }
+        if (!file.exists()) {
+            file.createNewFile()
+        }
     }
 
     fun getRangeHeader(offset: Long, total: Long = -1): Pair<String, String> {

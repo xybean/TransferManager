@@ -11,8 +11,7 @@ class DefaultDownloadStream(task: IDownloadTask) : IDownloadStream(task) {
     private var outputStream: OutputStream? = null
 
     @Throws(IOException::class)
-    override fun getOutputStream(): OutputStream {
-        val path = task.getTargetPath() + File.separator + task.getTargetName()
+    override fun getOutputStream(path: String): OutputStream {
         outputStream = if (task.getCurrent() > 0) {
             val file = File(path)
             if (!file.exists()) {
