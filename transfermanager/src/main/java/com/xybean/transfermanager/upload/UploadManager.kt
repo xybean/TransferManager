@@ -22,6 +22,7 @@ class UploadManager private constructor() {
     private lateinit var executor: Executor
     private lateinit var connectionFactory: IUploadConnection.Factory
     private lateinit var streamFactory: IUploadStream.Factory
+    private var idGenerator: IdGenerator? = null
 
     private val taskList: SparseArray<UploadTask> = SparseArray()
 
@@ -57,8 +58,11 @@ class UploadManager private constructor() {
         }
     }
 
-    fun upload(url: String, source: String, listener: UploadListener? = null, idGenerator: IdGenerator): Int {
-        val id = idGenerator.getId()
+    fun upload(url: String, source: String, listener: UploadListener? = null, config: UploadConfig): Int {
+
+        ensureConfigValid(config)
+
+        val id = config.idGenerator!!.getId()
 
         synchronized(taskList) {
             val cachedTask: UploadTask? = taskList.get(id)
@@ -74,9 +78,7 @@ class UploadManager private constructor() {
                     .url(url)
                     .sourcePath(source)
                     .listener(listener)
-                    .connection(connectionFactory)
-                    .stream(streamFactory)
-                    .idGenerator(idGenerator)
+                    .config(config)
                     .build()
 
             task.bindInternalListener(internalListener)
@@ -100,6 +102,33 @@ class UploadManager private constructor() {
         }
     }
 
+    fun contains(id: Int): Boolean {
+        synchronized(taskList) {
+            return taskList.get(id) != null
+        }
+    }
+
+    private fun ensureConfigValid(config: UploadConfig) {
+        if (config.idGenerator == null) {
+            config.idGenerator = idGenerator
+            if (config.idGenerator == null) {
+                throw IllegalArgumentException("you must set idGenerator by UploadManager.Builder.idGenerator() or UploadConfig.Builder.idGenerator()!")
+            }
+        }
+        if (config.connectionFactory == null) {
+            config.connectionFactory = connectionFactory
+            if (config.connectionFactory == null) {
+                throw IllegalArgumentException("you must set connectionFactory by UploadManager.Builder.connection() or UploadConfig.Builder.connection()!")
+            }
+        }
+        if (config.streamFactory == null) {
+            config.streamFactory = streamFactory
+            if (config.streamFactory == null) {
+                throw IllegalArgumentException("you must set streamFactory by UploadManager.Builder.stream() or UploadConfig.Builder.stream()!")
+            }
+        }
+    }
+
     class Builder {
 
         private val manager: UploadManager = UploadManager()
@@ -114,6 +143,10 @@ class UploadManager private constructor() {
 
         fun stream(streamFactory: IUploadStream.Factory) = apply {
             manager.streamFactory = streamFactory
+        }
+
+        fun idGenerator(idGenerator: IdGenerator) = apply {
+            manager.idGenerator = idGenerator
         }
 
         fun debug(debug: Boolean) = apply {

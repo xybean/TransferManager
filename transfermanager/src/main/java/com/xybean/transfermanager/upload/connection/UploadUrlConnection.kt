@@ -50,10 +50,6 @@ class UploadUrlConnection(task: IUploadTask, config: IUploadConnection.Configura
         mConnection.setRequestProperty("Content-Type", "multipart/form-data;boundary=$BOUNDARY")
     }
 
-    override fun getInputStream(): InputStream {
-        return mConnection.getInputStream()
-    }
-
     override fun write(byteArray: ByteArray, off: Int, len: Int) {
         if (outputStream == null) {
             outputStream = mConnection.getOutputStream()
@@ -63,7 +59,7 @@ class UploadUrlConnection(task: IUploadTask, config: IUploadConnection.Configura
             sb.append(TWO_HYPHENS)
             sb.append(BOUNDARY)
             sb.append(END)
-            sb.append("Content-Disposition: form-data; name=\"data\";filename=\"${task.getFileName()}\"$END")
+            sb.append("Content-Disposition: form-data; name=\"${task.getFileBody()}\";filename=\"${task.getFileName()}\"$END")
             sb.append("Content-Type: ${task.getMimeType()}$END")
             sb.append(END)
             val prefix = sb.toString().toByteArray()
@@ -109,7 +105,7 @@ class UploadUrlConnection(task: IUploadTask, config: IUploadConnection.Configura
             var inputStreamReader: InputStreamReader? = null
             var reader: BufferedReader? = null
             try {
-                inputStream = getInputStream()
+                inputStream = mConnection.getInputStream()
                 inputStreamReader = InputStreamReader(inputStream)
                 reader = BufferedReader(inputStreamReader)
                 var tempLine = reader.readLine()

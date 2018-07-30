@@ -1,20 +1,17 @@
 package com.xybean.transfermanager.upload.connection
 
 import com.xybean.transfermanager.upload.task.IUploadTask
-import java.io.InputStream
 
 /**
  * Author @xybean on 2018/7/24.
  */
 abstract class IUploadConnection(protected val task: IUploadTask, protected val config: Configuration? = null) {
 
-    abstract fun getInputStream(): InputStream
-
     abstract fun write(byteArray: ByteArray, off: Int, len: Int)
 
     abstract fun flush()
 
-    abstract fun addHeader(name: String, value: String)
+    internal abstract fun addHeader(name: String, value: String)
 
     @Throws(Exception::class)
     abstract fun request(url: String)

@@ -1,7 +1,9 @@
 package com.xybean.transfermanager.upload.task
 
+import android.text.TextUtils
 import com.xybean.transfermanager.IdGenerator
 import com.xybean.transfermanager.Logger
+import com.xybean.transfermanager.upload.UploadConfig
 import com.xybean.transfermanager.upload.UploadListener
 import com.xybean.transfermanager.upload.connection.IUploadConnection
 import com.xybean.transfermanager.upload.stream.IUploadStream
@@ -18,6 +20,7 @@ class UploadTask private constructor() : IUploadTask, Runnable {
         private const val TAG = "UploadTask"
         private const val BUFFER_SIZE = 1024
         private const val DEFAULT_MIME_TYPE = "multipart/form-data; charset=utf-8"
+        private const val DEFAULT_FILE_BODY = "file"
     }
 
     private lateinit var idGenerator: IdGenerator
@@ -35,6 +38,7 @@ class UploadTask private constructor() : IUploadTask, Runnable {
     private var status: AtomicInteger = AtomicInteger(UploadStatus.WAIT)
     private var id = -1
     private var mimeType = DEFAULT_MIME_TYPE
+    private var fileBody = DEFAULT_FILE_BODY
 
     @Volatile
     private var canceled = false
@@ -57,6 +61,8 @@ class UploadTask private constructor() : IUploadTask, Runnable {
                     connection.addHeader(key, headers[key]!!)
                 }
             }
+
+            connection.request(url)
 
             // 写入文件流
             val inputStream = uploadStream.getInputStream()
@@ -83,8 +89,6 @@ class UploadTask private constructor() : IUploadTask, Runnable {
                 }
                 else -> connection.flush()
             }
-
-            connection.request(url)
 
             val response = connection.getResponse()
             if (!canceled) {
@@ -152,6 +156,10 @@ class UploadTask private constructor() : IUploadTask, Runnable {
         return mimeType
     }
 
+    override fun getFileBody(): String {
+        return fileBody
+    }
+
     override fun getCurrent(): Long {
         return current
     }
@@ -166,14 +174,6 @@ class UploadTask private constructor() : IUploadTask, Runnable {
         private lateinit var connectionFactory: IUploadConnection.Factory
         private lateinit var streamFactory: IUploadStream.Factory
 
-        fun connection(connection: IUploadConnection.Factory) = apply {
-            this@Builder.connectionFactory = connection
-        }
-
-        fun stream(streamFactory: IUploadStream.Factory) = apply {
-            this@Builder.streamFactory = streamFactory
-        }
-
         fun url(url: String) = apply {
             task.url = url
         }
@@ -182,32 +182,35 @@ class UploadTask private constructor() : IUploadTask, Runnable {
             task.sourcePath = path
         }
 
-        fun fileName(name: String) = apply {
-            task.fileName = name
-        }
-
-        fun mimeType(mimeType: String) = apply {
-            task.mimeType = mimeType
-        }
-
-        fun addHeader(key: String, value: String) = apply {
-            task.headers[key] = value
-        }
-
-        fun addHeaders(headers: Map<String, String>) = apply {
-            task.headers.putAll(headers)
-        }
-
-        fun offset(start: Long) = apply {
-            task.current = start
-        }
-
-        fun idGenerator(idGenerator: IdGenerator) = apply {
-            task.idGenerator = idGenerator
-        }
-
         fun listener(listener: UploadListener?) = apply {
             task.listener = listener
+        }
+
+        fun config(config: UploadConfig) = apply {
+            if (config.connectionFactory != null) {
+                this@Builder.connectionFactory = config.connectionFactory!!
+            }
+            if (config.streamFactory != null) {
+                this@Builder.streamFactory = config.streamFactory!!
+            }
+            if (!TextUtils.isEmpty(config.fileName)) {
+                task.fileName = config.fileName
+            }
+            if (!TextUtils.isEmpty(config.fileBody)) {
+                task.fileBody = config.fileBody
+            }
+            if (!TextUtils.isEmpty(config.mimeType)) {
+                task.mimeType = config.mimeType
+            }
+            if (!config.headers.isEmpty()) {
+                task.headers.putAll(config.headers)
+            }
+            if (config.offset > 0) {
+                task.current = config.offset
+            }
+            if (config.idGenerator != null) {
+                task.idGenerator = config.idGenerator!!
+            }
         }
 
         fun build(): UploadTask {

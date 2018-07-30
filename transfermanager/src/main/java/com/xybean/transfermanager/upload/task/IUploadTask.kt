@@ -23,6 +23,8 @@ interface IUploadTask {
 
     fun getMimeType(): String
 
+    fun getFileBody(): String
+
     fun getCurrent(): Long
 
     fun getTotal(): Long

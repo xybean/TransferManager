@@ -1,30 +1,33 @@
-package com.xybean.transfermanager.download
+package com.xybean.transfermanager.upload
 
 import com.xybean.transfermanager.IdGenerator
-import com.xybean.transfermanager.download.connection.IDownloadConnection
-import com.xybean.transfermanager.download.stream.IDownloadStream
+import com.xybean.transfermanager.upload.connection.IUploadConnection
+import com.xybean.transfermanager.upload.stream.IUploadStream
 
 /**
- * Author @xybean on 2018/7/26.
+ * Author @xybean on 2018/7/27.
  */
-class DownloadConfig {
+class UploadConfig {
 
-    internal var connectionFactory: IDownloadConnection.Factory? = null
-    internal var streamFactory: IDownloadStream.Factory? = null
+    internal var connectionFactory: IUploadConnection.Factory? = null
+    internal var streamFactory: IUploadStream.Factory? = null
     internal var idGenerator: IdGenerator? = null
-    internal var headers = HashMap<String, String>()
     internal var offset = -1L
     internal var forceReload = false
+    internal var headers = HashMap<String, String>()
+    internal var fileName = ""
+    internal var fileBody = ""
+    internal var mimeType = ""
 
     class Builder {
 
-        private val config = DownloadConfig()
+        private val config = UploadConfig()
 
-        fun connection(connection: IDownloadConnection.Factory) = apply {
+        fun connection(connection: IUploadConnection.Factory) = apply {
             config.connectionFactory = connection
         }
 
-        fun stream(stream: IDownloadStream.Factory) = apply {
+        fun stream(stream: IUploadStream.Factory) = apply {
             config.streamFactory = stream
         }
 
@@ -34,6 +37,14 @@ class DownloadConfig {
 
         fun offset(offset: Long) = apply {
             config.offset = offset
+        }
+
+        fun fileName(fileName: String) = apply {
+            config.fileName = fileName
+        }
+
+        fun fileBody(fileBody: String) = apply {
+            config.fileBody = fileBody
         }
 
         fun forceReload(force: Boolean) = apply {
@@ -51,4 +62,5 @@ class DownloadConfig {
         fun build() = config
 
     }
+
 }

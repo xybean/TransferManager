@@ -1,5 +1,6 @@
 package com.xybean.transfermanager
 
+import android.os.Build
 import android.os.Environment
 import android.os.StatFs
 import java.io.File
@@ -25,9 +26,15 @@ internal object Utils {
         get() {
             val sdcardFileDir = Environment.getExternalStorageDirectory()
             val stat = StatFs(sdcardFileDir.path)
-            val blockSize = stat.blockSizeLong
-            stat.blockCountLong
-            return stat.availableBlocksLong * blockSize
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                val blockSize = stat.blockSizeLong
+                stat.blockCountLong
+                stat.availableBlocksLong * blockSize
+            } else {
+                val blockSize = stat.blockSize
+                stat.blockCount
+                (stat.availableBlocks * blockSize).toLong()
+            }
         }
 
     /**

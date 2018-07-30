@@ -111,11 +111,9 @@ class DownloadManager private constructor() {
      */
     fun download(url: String, targetPath: String, targetName: String, listener: DownloadListener? = null, config: DownloadConfig): Int {
 
-        val id = if (config.idGenerator == null) {
-            idGenerator!!.getId()
-        } else {
-            config.idGenerator!!.getId()
-        }
+        ensureConfigValid(config)
+
+        val id = config.idGenerator!!.getId()
 
         synchronized(taskList) {
             val cachedTask: DownloadTask? = taskList.get(id)
@@ -147,27 +145,17 @@ class DownloadManager private constructor() {
                         }
                         // 如果之前有下载记录，则恢复记录
                         val header = Utils.getRangeHeader(model.current)
+                        config.headers[header.first] = header.second
+                        config.offset = if (config.offset > 0) {
+                            config.offset
+                        } else {
+                            model.current
+                        }
                         task = DownloadTask.Builder()
                                 .url(model.url)
                                 .targetPath(model.targetPath)
                                 .targetName(model.targetName)
-                                .offset(if (config.offset > 0) {
-                                    config.offset
-                                } else {
-                                    model.current
-                                })
-                                .addHeader(header.first, header.second)
-                                .connection(if (config.connectionFactory == null) {
-                                    connectionFactory!!
-                                } else {
-                                    config.connectionFactory!!
-                                })
-                                .outputStream(if (config.streamFactory == null) {
-                                    streamFactory!!
-                                } else {
-                                    config.streamFactory!!
-                                })
-                                .idGenerator(config.idGenerator!!)
+                                .config(config)
                                 .build()
                     }
 
@@ -177,22 +165,7 @@ class DownloadManager private constructor() {
                                 .url(url)
                                 .targetPath(targetPath)
                                 .targetName(targetName)
-                                .offset(if (config.offset > 0) {
-                                    config.offset
-                                } else {
-                                    0
-                                })
-                                .connection(if (config.connectionFactory == null) {
-                                    connectionFactory!!
-                                } else {
-                                    config.connectionFactory!!
-                                })
-                                .outputStream(if (config.streamFactory == null) {
-                                    streamFactory!!
-                                } else {
-                                    config.streamFactory!!
-                                })
-                                .idGenerator(config.idGenerator!!)
+                                .config(config)
                                 .build()
                     }
 
@@ -246,6 +219,33 @@ class DownloadManager private constructor() {
                 taskList.remove(id)
                 Logger.i(TAG, "pause and remove a Task(id = ${task.getId()}), " +
                         "TaskList's size is ${taskList.size()} now.")
+            }
+        }
+    }
+
+    fun contains(id: Int): Boolean {
+        synchronized(taskList) {
+            return taskList.get(id) != null
+        }
+    }
+
+    private fun ensureConfigValid(config: DownloadConfig) {
+        if (config.idGenerator == null) {
+            config.idGenerator = idGenerator
+            if (config.idGenerator == null) {
+                throw IllegalArgumentException("you must set idGenerator by DownloadManager.Builder.idGenerator() or DownloadConfig.Builder.idGenerator()!")
+            }
+        }
+        if (config.connectionFactory == null) {
+            config.connectionFactory = connectionFactory
+            if (config.connectionFactory == null) {
+                throw IllegalArgumentException("you must set connectionFactory by DownloadManager.Builder.connection() or DownloadConfig.Builder.connection()!")
+            }
+        }
+        if (config.streamFactory == null) {
+            config.streamFactory = streamFactory
+            if (config.streamFactory == null) {
+                throw IllegalArgumentException("you must set streamFactory by DownloadManager.Builder.stream() or DownloadConfig.Builder.stream()!")
             }
         }
     }

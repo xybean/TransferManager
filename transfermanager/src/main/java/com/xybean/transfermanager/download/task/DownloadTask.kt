@@ -4,6 +4,7 @@ import android.os.SystemClock
 import com.xybean.transfermanager.IdGenerator
 import com.xybean.transfermanager.Logger
 import com.xybean.transfermanager.Utils
+import com.xybean.transfermanager.download.DownloadConfig
 import com.xybean.transfermanager.download.DownloadListener
 import com.xybean.transfermanager.download.connection.IDownloadConnection
 import com.xybean.transfermanager.download.stream.IDownloadStream
@@ -244,6 +245,24 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
 
         fun targetName(name: String) = apply {
             task.targetName = name
+        }
+
+        fun config(config: DownloadConfig) = apply {
+            if (config.connectionFactory != null) {
+                this@Builder.connectionFactory = config.connectionFactory!!
+            }
+            if (config.streamFactory != null) {
+                this@Builder.streamFactory = config.streamFactory!!
+            }
+            if (!config.headers.isEmpty()) {
+                task.headers.putAll(config.headers)
+            }
+            if (config.offset > 0) {
+                task.current = config.offset
+            }
+            if (config.idGenerator != null) {
+                task.idGenerator = config.idGenerator!!
+            }
         }
 
         fun addHeader(key: String, value: String) = apply {
