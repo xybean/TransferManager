@@ -1,7 +1,6 @@
 package com.xybean.transfermanager.download.task
 
 import android.os.SystemClock
-import com.xybean.transfermanager.IdGenerator
 import com.xybean.transfermanager.Logger
 import com.xybean.transfermanager.Utils
 import com.xybean.transfermanager.download.DownloadConfig
@@ -9,6 +8,7 @@ import com.xybean.transfermanager.download.DownloadListener
 import com.xybean.transfermanager.download.connection.IDownloadConnection
 import com.xybean.transfermanager.download.stream.IDownloadStream
 import com.xybean.transfermanager.exception.NoEnoughSpaceException
+import com.xybean.transfermanager.id.IdGenerator
 import java.io.File
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger

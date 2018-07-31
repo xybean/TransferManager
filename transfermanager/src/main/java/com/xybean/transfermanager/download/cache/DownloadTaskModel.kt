@@ -1,4 +1,4 @@
-package com.xybean.transfermanager.download.db
+package com.xybean.transfermanager.download.cache
 
 import android.content.ContentValues
 

@@ -1,4 +1,4 @@
-package com.xybean.transfermanager.download.db
+package com.xybean.transfermanager.download.cache
 
 import android.content.ContentValues
 import android.database.Cursor
@@ -9,7 +9,7 @@ import com.xybean.transfermanager.download.task.DownloadStatus
 /**
  * Author @xybean on 2018/7/16.
  */
-class SqliteDatabaseHandler : DownloadDatabaseHandler {
+class SqliteCacheHandler : DownloadCacheHandler {
 
     private val db: SQLiteDatabase
 

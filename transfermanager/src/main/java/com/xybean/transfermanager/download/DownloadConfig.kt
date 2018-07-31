@@ -1,6 +1,6 @@
 package com.xybean.transfermanager.download
 
-import com.xybean.transfermanager.IdGenerator
+import com.xybean.transfermanager.id.IdGenerator
 import com.xybean.transfermanager.download.connection.IDownloadConnection
 import com.xybean.transfermanager.download.stream.IDownloadStream
 

@@ -1,9 +1,9 @@
-package com.xybean.transfermanager.download.db
+package com.xybean.transfermanager.download.cache
 
 /**
  * Author @xybean on 2018/7/16.
  */
-interface DownloadDatabaseHandler {
+interface DownloadCacheHandler {
 
     fun find(id: Int): DownloadTaskModel?
 

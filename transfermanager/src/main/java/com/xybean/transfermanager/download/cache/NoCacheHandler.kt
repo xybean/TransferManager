@@ -1,10 +1,10 @@
-package com.xybean.transfermanager.download.db
+package com.xybean.transfermanager.download.cache
 
 /**
  * Author @xybean on 2018/7/16.<br></br>
  * 空实现，表示并不进行持久化处理
  */
-class NoDatabaseHandler : DownloadDatabaseHandler {
+class NoCacheHandler : DownloadCacheHandler {
     override fun find(id: Int): DownloadTaskModel? {
         return null
     }

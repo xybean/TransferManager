@@ -1,6 +1,5 @@
-package com.xybean.transfermanager.download.id
+package com.xybean.transfermanager.id
 
-import com.xybean.transfermanager.IdGenerator
 import com.xybean.transfermanager.Utils
 
 /**

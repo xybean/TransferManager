@@ -1,12 +1,11 @@
 package com.xybean.transfermanager.download
 
 import android.util.SparseArray
-import com.xybean.transfermanager.IdGenerator
 import com.xybean.transfermanager.Logger
 import com.xybean.transfermanager.Utils
+import com.xybean.transfermanager.download.cache.DownloadCacheHandler
+import com.xybean.transfermanager.download.cache.DownloadTaskModel
 import com.xybean.transfermanager.download.connection.IDownloadConnection
-import com.xybean.transfermanager.download.db.DownloadDatabaseHandler
-import com.xybean.transfermanager.download.db.DownloadTaskModel
 import com.xybean.transfermanager.download.stream.IDownloadStream
 import com.xybean.transfermanager.download.task.DownloadInternalListener
 import com.xybean.transfermanager.download.task.DownloadStatus
@@ -14,6 +13,7 @@ import com.xybean.transfermanager.download.task.DownloadTask
 import com.xybean.transfermanager.download.task.IDownloadTask
 import com.xybean.transfermanager.executor.BaseTask
 import com.xybean.transfermanager.executor.TaskExecutor
+import com.xybean.transfermanager.id.IdGenerator
 import java.util.concurrent.Executor
 
 /**
@@ -28,7 +28,7 @@ class DownloadManager private constructor() {
     private val dbExecutor = TaskExecutor("DownloadManagerDbExecutor", 1)
 
     private lateinit var executor: Executor
-    private lateinit var dbHandler: DownloadDatabaseHandler
+    private lateinit var cacheHandler: DownloadCacheHandler
     private var connectionFactory: IDownloadConnection.Factory? = null
     private var streamFactory: IDownloadStream.Factory? = null
     private var idGenerator: IdGenerator? = null
@@ -39,7 +39,7 @@ class DownloadManager private constructor() {
         override fun onStart(task: IDownloadTask) {
             dbExecutor.execute(object : BaseTask<Void?>() {
                 override fun execute(): Void? {
-                    dbHandler.replace(DownloadTaskModel().apply {
+                    cacheHandler.replace(DownloadTaskModel().apply {
                         id = task.getId()
                         url = task.getUrl()
                         targetPath = task.getTargetPath()
@@ -60,7 +60,7 @@ class DownloadManager private constructor() {
             if (sync) {
                 dbExecutor.execute(object : BaseTask<Void?>() {
                     override fun execute(): Void? {
-                        dbHandler.updateProgress(task.getId(), task.getCurrent(), task.getTotal())
+                        cacheHandler.updateProgress(task.getId(), task.getCurrent(), task.getTotal())
                         return null
                     }
                 })
@@ -76,7 +76,7 @@ class DownloadManager private constructor() {
             }
             dbExecutor.execute(object : BaseTask<Void?>() {
                 override fun execute(): Void? {
-                    dbHandler.remove(task.getId())
+                    cacheHandler.remove(task.getId())
                     return null
                 }
             })
@@ -92,7 +92,7 @@ class DownloadManager private constructor() {
             }
             dbExecutor.execute(object : BaseTask<Void?>() {
                 override fun execute(): Void? {
-                    dbHandler.updateFailed(task.getId(), e)
+                    cacheHandler.updateFailed(task.getId(), e)
                     return null
                 }
             })
@@ -132,16 +132,16 @@ class DownloadManager private constructor() {
             override fun execute(): Void? {
                 synchronized(taskList) {
                     if (config.forceReload) {
-                        dbHandler.remove(id)
+                        cacheHandler.remove(id)
                     }
                     var task: DownloadTask? = null
-                    val model = dbHandler.find(id)
+                    val model = cacheHandler.find(id)
                     if (model != null) {
 
                         // 优先处理config配置的偏移量
                         if (config.offset > 0) {
                             Logger.d(TAG, "task(id = $id) is cached, but client reset offset, so we will update cache first.")
-                            dbHandler.updateProgress(id, config.offset, model.total)
+                            cacheHandler.updateProgress(id, config.offset, model.total)
                         }
                         // 如果之前有下载记录，则恢复记录
                         val header = Utils.getRangeHeader(model.current)
@@ -200,7 +200,7 @@ class DownloadManager private constructor() {
             }
             dbExecutor.execute(object : BaseTask<Void?>() {
                 override fun execute(): Void? {
-                    dbHandler.remove(task.getId())
+                    cacheHandler.remove(id)
                     return null
                 }
             })
@@ -219,6 +219,12 @@ class DownloadManager private constructor() {
                 taskList.remove(id)
                 Logger.i(TAG, "pause and remove a Task(id = ${task.getId()}), " +
                         "TaskList's size is ${taskList.size()} now.")
+                dbExecutor.execute(object : BaseTask<Void?>() {
+                    override fun execute(): Void? {
+                        cacheHandler.updatePaused(task.getId(), task.getCurrent(), task.getTotal())
+                        return null
+                    }
+                })
             }
         }
     }
@@ -258,8 +264,8 @@ class DownloadManager private constructor() {
             manager.executor = executor
         }
 
-        fun dbHandler(dbHandler: DownloadDatabaseHandler) = apply {
-            manager.dbHandler = dbHandler
+        fun cacheHandler(cacheHandler: DownloadCacheHandler) = apply {
+            manager.cacheHandler = cacheHandler
         }
 
         fun connection(connectionFactory: IDownloadConnection.Factory) = apply {

@@ -1,8 +1,8 @@
 package com.xybean.transfermanager.upload.task
 
 import android.text.TextUtils
-import com.xybean.transfermanager.IdGenerator
 import com.xybean.transfermanager.Logger
+import com.xybean.transfermanager.id.IdGenerator
 import com.xybean.transfermanager.upload.UploadConfig
 import com.xybean.transfermanager.upload.UploadListener
 import com.xybean.transfermanager.upload.connection.IUploadConnection
@@ -166,6 +166,14 @@ class UploadTask private constructor() : IUploadTask, Runnable {
 
     override fun getTotal(): Long {
         return total
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return other is UploadTask && other.id == id
+    }
+
+    override fun hashCode(): Int {
+        return id
     }
 
     class Builder {

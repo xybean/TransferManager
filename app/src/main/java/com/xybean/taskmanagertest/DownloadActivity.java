@@ -12,12 +12,13 @@ import com.xybean.transfermanager.download.DownloadListener;
 import com.xybean.transfermanager.download.DownloadManager;
 import com.xybean.transfermanager.download.connection.DownloadUrlConnection;
 import com.xybean.transfermanager.download.connection.IDownloadConnection;
-import com.xybean.transfermanager.download.db.SqliteDatabaseHandler;
-import com.xybean.transfermanager.download.id.DefaultIdGenerator;
+import com.xybean.transfermanager.download.cache.SqliteCacheHandler;
 import com.xybean.transfermanager.download.stream.DefaultDownloadStream;
 import com.xybean.transfermanager.download.stream.IDownloadStream;
 import com.xybean.transfermanager.download.task.IDownloadTask;
+import com.xybean.transfermanager.id.UrlPathIdGenerator;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Executors;
 
@@ -43,7 +44,7 @@ public class DownloadActivity extends AppCompatActivity {
         ApplicationHolder.INSTANCE.holdContext(getApplicationContext());
 
         manager = new DownloadManager.Builder()
-                .dbHandler(new SqliteDatabaseHandler())
+                .cacheHandler(new SqliteCacheHandler())
                 .executor(Executors.newFixedThreadPool(2))
                 .connection(new IDownloadConnection.Factory() {
                     @NonNull
@@ -115,7 +116,7 @@ public class DownloadActivity extends AppCompatActivity {
                             }
                         },
                         new DownloadConfig.Builder()
-                                .idGenerator(new DefaultIdGenerator(DOWNLOAD_URL, targetPath, "10363.mp3"))
+                                .idGenerator(new UrlPathIdGenerator(DOWNLOAD_URL, targetPath + File.separator + "10363.mp3"))
                                 .build());
             }
         });
@@ -182,7 +183,7 @@ public class DownloadActivity extends AppCompatActivity {
                             }
                         },
                         new DownloadConfig.Builder()
-                                .idGenerator(new DefaultIdGenerator(APK_URL, targetPath, "fangcloud.apk"))
+                                .idGenerator(new UrlPathIdGenerator(APK_URL, targetPath + File.separator + "fangcloud.apk"))
                                 .build());
             }
         });

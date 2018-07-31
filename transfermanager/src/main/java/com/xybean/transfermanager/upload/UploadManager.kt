@@ -1,7 +1,7 @@
 package com.xybean.transfermanager.upload
 
 import android.util.SparseArray
-import com.xybean.transfermanager.IdGenerator
+import com.xybean.transfermanager.id.IdGenerator
 import com.xybean.transfermanager.Logger
 import com.xybean.transfermanager.upload.connection.IUploadConnection
 import com.xybean.transfermanager.upload.stream.IUploadStream

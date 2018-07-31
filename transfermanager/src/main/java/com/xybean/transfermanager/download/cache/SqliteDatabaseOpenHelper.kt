@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.xybean.transfermanager.download.db
+package com.xybean.transfermanager.download.cache
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
