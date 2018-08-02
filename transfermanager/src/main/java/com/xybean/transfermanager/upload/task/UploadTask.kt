@@ -2,6 +2,7 @@ package com.xybean.transfermanager.upload.task
 
 import android.text.TextUtils
 import com.xybean.transfermanager.Logger
+import com.xybean.transfermanager.download.task.DownloadStatus
 import com.xybean.transfermanager.id.IdGenerator
 import com.xybean.transfermanager.upload.UploadConfig
 import com.xybean.transfermanager.upload.UploadListener
@@ -14,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * Author @xybean on 2018/7/24.
  */
-class UploadTask private constructor() : IUploadTask, Runnable {
+class UploadTask private constructor() : IUploadTask, Runnable, Comparable<UploadTask> {
 
     private companion object {
         private const val TAG = "UploadTask"
@@ -35,8 +36,9 @@ class UploadTask private constructor() : IUploadTask, Runnable {
     private var fileName = ""
     private var url: String = ""
     private var listener: UploadListener? = null
-    private var status: AtomicInteger = AtomicInteger(UploadStatus.WAIT)
+    private val status: AtomicInteger = AtomicInteger(DownloadStatus.WAIT)
     private var id = -1
+    private val priority = AtomicInteger(0)
     private var mimeType = DEFAULT_MIME_TYPE
     private var fileBody = DEFAULT_FILE_BODY
 
@@ -108,6 +110,10 @@ class UploadTask private constructor() : IUploadTask, Runnable {
 
     }
 
+    override fun compareTo(other: UploadTask): Int {
+        return other.getPriority() - priority.get()
+    }
+
     fun pause() {
         paused = true
     }
@@ -168,6 +174,14 @@ class UploadTask private constructor() : IUploadTask, Runnable {
 
     override fun getTotal(): Long {
         return total
+    }
+
+    override fun getPriority(): Int {
+        return priority.get()
+    }
+
+    override fun setPriority(priority: Int) {
+        this.priority.set(priority)
     }
 
     override fun equals(other: Any?): Boolean {

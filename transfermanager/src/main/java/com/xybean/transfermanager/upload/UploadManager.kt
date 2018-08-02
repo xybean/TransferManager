@@ -109,6 +109,12 @@ class UploadManager private constructor() {
         }
     }
 
+    fun updatePriority(id: Int, priority: Int) {
+        synchronized(taskList) {
+            taskList.get(id)?.setPriority(priority)
+        }
+    }
+
     private fun ensureConfigValid(config: UploadConfig) {
         if (config.idGenerator == null) {
             config.idGenerator = idGenerator

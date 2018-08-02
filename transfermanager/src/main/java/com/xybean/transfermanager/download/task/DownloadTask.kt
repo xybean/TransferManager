@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * Author @xybean on 2018/7/16.
  */
-internal class DownloadTask private constructor() : IDownloadTask, Runnable {
+internal class DownloadTask private constructor() : IDownloadTask, Runnable, Comparable<DownloadTask> {
 
     private companion object {
         private const val TAG = "DownloadTask"
@@ -41,8 +41,9 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
     private var targetName: String = ""
     private var url: String = ""
     private var listener: DownloadListener? = null
-    private var status: AtomicInteger = AtomicInteger(DownloadStatus.WAIT)
+    private val status: AtomicInteger = AtomicInteger(DownloadStatus.WAIT)
     private var id = -1
+    private val priority = AtomicInteger(0)
 
     @Volatile
     private var canceled = false
@@ -160,6 +161,10 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
 
     }
 
+    override fun compareTo(other: DownloadTask): Int {
+        return other.getPriority() - priority.get()
+    }
+
     override fun getUrl(): String {
         return url
     }
@@ -197,6 +202,14 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
 
     override fun getTotal(): Long {
         return total
+    }
+
+    override fun getPriority(): Int {
+        return priority.get()
+    }
+
+    override fun setPriority(priority: Int) {
+        this.priority.set(priority)
     }
 
     fun cancel() {
@@ -264,6 +277,7 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
             if (config.idGenerator != null) {
                 task.idGenerator = config.idGenerator!!
             }
+            task.priority.set(config.priority)
         }
 
         fun build(): DownloadTask {

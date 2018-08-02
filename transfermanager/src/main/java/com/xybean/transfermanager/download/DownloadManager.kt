@@ -226,6 +226,12 @@ class DownloadManager private constructor() {
         }
     }
 
+    fun updatePriority(id: Int, priority: Int) {
+        synchronized(taskList) {
+            taskList.get(id)?.setPriority(priority)
+        }
+    }
+
     fun contains(id: Int): Boolean {
         synchronized(taskList) {
             return taskList.get(id) != null

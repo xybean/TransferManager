@@ -18,6 +18,7 @@ class UploadConfig {
     internal var fileName = ""
     internal var fileBody = ""
     internal var mimeType = ""
+    internal var priority = 0
 
     class Builder {
 
@@ -49,6 +50,10 @@ class UploadConfig {
 
         fun forceReload(force: Boolean) = apply {
             config.forceReload = force
+        }
+
+        fun priority(priority: Int) = apply {
+            config.priority = priority
         }
 
         fun addHeader(name: String, value: String) = apply {

@@ -16,6 +16,7 @@ class DownloadConfig {
     internal var offset = -1L
     internal var total = -1L
     internal var forceReload = false
+    internal var priority = 0
 
     class Builder {
 
@@ -44,6 +45,10 @@ class DownloadConfig {
 
         fun forceReload(force: Boolean) = apply {
             config.forceReload = force
+        }
+
+        fun priority(priority: Int) = apply {
+            config.priority = priority
         }
 
         fun addHeader(name: String, value: String) = apply {

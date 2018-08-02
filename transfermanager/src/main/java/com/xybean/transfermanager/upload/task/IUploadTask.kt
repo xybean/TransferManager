@@ -28,4 +28,8 @@ interface IUploadTask {
     fun getCurrent(): Long
 
     fun getTotal(): Long
+
+    fun getPriority(): Int
+
+    fun setPriority(priority: Int)
 }
