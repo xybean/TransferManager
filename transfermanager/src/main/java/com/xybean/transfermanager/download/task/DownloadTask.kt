@@ -55,12 +55,14 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
             Logger.d(TAG, "Task(id = $id) has been canceled or paused before start.")
             return
         }
-        status.set(DownloadStatus.START)
-        Logger.i(TAG, "Task(id = $id) start to be executed and save at ${saveAsFile()}")
-        internalListener?.onStart(this)
 
         // 连接网络、读流、写流、存库
         try {
+
+            if (current > 0) {
+                val header = Utils.getRangeHeader(current)
+                headers[header.first] = header.second
+            }
 
             // 添加请求头
             if (!headers.isEmpty()) {
@@ -77,6 +79,10 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
             if (freeSpace < contentLength) {
                 throw NoEnoughSpaceException(contentLength, freeSpace)
             }
+
+            status.set(DownloadStatus.START)
+            Logger.i(TAG, "Task(id = $id) start to be executed and save at ${saveAsFile()}")
+            internalListener?.onStart(this)
 
             // 读流
             val tempFile = File(generateTempFile())
@@ -227,14 +233,6 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
         private lateinit var connectionFactory: IDownloadConnection.Factory
         private lateinit var streamFactory: IDownloadStream.Factory
 
-        fun connection(connection: IDownloadConnection.Factory) = apply {
-            this@Builder.connectionFactory = connection
-        }
-
-        fun outputStream(streamFactory: IDownloadStream.Factory) = apply {
-            this@Builder.streamFactory = streamFactory
-        }
-
         fun url(url: String) = apply {
             task.url = url
         }
@@ -260,25 +258,12 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable {
             if (config.offset > 0) {
                 task.current = config.offset
             }
+            if (config.total > 0) {
+                task.total = config.total
+            }
             if (config.idGenerator != null) {
                 task.idGenerator = config.idGenerator!!
             }
-        }
-
-        fun addHeader(key: String, value: String) = apply {
-            task.headers[key] = value
-        }
-
-        fun addHeaders(headers: Map<String, String>) = apply {
-            task.headers.putAll(headers)
-        }
-
-        fun offset(start: Long) = apply {
-            task.current = start
-        }
-
-        fun idGenerator(idGenerator: IdGenerator) = apply {
-            task.idGenerator = idGenerator
         }
 
         fun build(): DownloadTask {

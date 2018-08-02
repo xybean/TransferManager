@@ -1,8 +1,8 @@
 package com.xybean.transfermanager.download
 
-import com.xybean.transfermanager.id.IdGenerator
 import com.xybean.transfermanager.download.connection.IDownloadConnection
 import com.xybean.transfermanager.download.stream.IDownloadStream
+import com.xybean.transfermanager.id.IdGenerator
 
 /**
  * Author @xybean on 2018/7/26.
@@ -14,6 +14,7 @@ class DownloadConfig {
     internal var idGenerator: IdGenerator? = null
     internal var headers = HashMap<String, String>()
     internal var offset = -1L
+    internal var total = -1L
     internal var forceReload = false
 
     class Builder {
@@ -34,6 +35,11 @@ class DownloadConfig {
 
         fun offset(offset: Long) = apply {
             config.offset = offset
+        }
+
+        fun offset(offset: Long, total: Long) = apply {
+            config.offset = offset
+            config.total = total
         }
 
         fun forceReload(force: Boolean) = apply {

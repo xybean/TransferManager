@@ -62,15 +62,16 @@ class UploadTask private constructor() : IUploadTask, Runnable {
                 }
             }
 
+            val inputStream = uploadStream.getInputStream()
+            total = uploadStream.length()
+
             connection.request(url)
 
             // 写入文件流
-            val inputStream = uploadStream.getInputStream()
-            total = uploadStream.length()
             val buffer = ByteArray(BUFFER_SIZE)
             status.set(UploadStatus.UPDATE)
             var count = inputStream.read(buffer, 0, buffer.size)
-            while (count != -1) {
+            while (count != -1 && !canceled && !paused) {
                 connection.write(buffer, 0, count)
                 current += count
                 internalListener?.onUpdate(this)
@@ -78,6 +79,7 @@ class UploadTask private constructor() : IUploadTask, Runnable {
             }
             when {
                 canceled -> {
+                    connection.flush()
                     Logger.i(TAG, "UploadTask(id = $id) is canceled.")
                     return
                 }

@@ -2,7 +2,6 @@ package com.xybean.transfermanager.download
 
 import android.util.SparseArray
 import com.xybean.transfermanager.Logger
-import com.xybean.transfermanager.Utils
 import com.xybean.transfermanager.download.cache.DownloadCacheHandler
 import com.xybean.transfermanager.download.cache.DownloadTaskModel
 import com.xybean.transfermanager.download.connection.IDownloadConnection
@@ -144,8 +143,6 @@ class DownloadManager private constructor() {
                             cacheHandler.updateProgress(id, config.offset, model.total)
                         }
                         // 如果之前有下载记录，则恢复记录
-                        val header = Utils.getRangeHeader(model.current)
-                        config.headers[header.first] = header.second
                         config.offset = if (config.offset > 0) {
                             config.offset
                         } else {

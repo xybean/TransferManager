@@ -1,5 +1,6 @@
 package com.xybean.transfermanager.upload.connection
 
+import android.os.Build
 import com.xybean.transfermanager.upload.task.IUploadTask
 import java.io.BufferedReader
 import java.io.InputStream
@@ -24,6 +25,8 @@ class UploadUrlConnection(task: IUploadTask, config: IUploadConnection.Configura
     private var mConnection: URLConnection
     private var outputStream: OutputStream? = null
 
+    private val prefix: ByteArray
+    private val suffix: ByteArray
     private var prefixWritten = false
     private var suffixWritten = false
 
@@ -43,11 +46,22 @@ class UploadUrlConnection(task: IUploadTask, config: IUploadConnection.Configura
         mConnection.doInput = true
         // 设置允许输出
         mConnection.doOutput = true
+        mConnection.useCaches = false
         mConnection.setRequestProperty("Connection", "Keep-Alive")
         // 设置字符编码
         mConnection.setRequestProperty("Charset", "UTF-8")
         // 设置请求内容类型
         mConnection.setRequestProperty("Content-Type", "multipart/form-data;boundary=$BOUNDARY")
+
+        val sb = StringBuffer()
+        sb.append(TWO_HYPHENS)
+        sb.append(BOUNDARY)
+        sb.append(END)
+        sb.append("Content-Disposition: form-data; name=\"${task.getFileBody()}\";filename=\"${task.getFileName()}\"$END")
+        sb.append("Content-Type: ${task.getMimeType()}$END")
+        sb.append(END)
+        prefix = sb.toString().toByteArray()
+        suffix = (END + TWO_HYPHENS + BOUNDARY + TWO_HYPHENS + END).toByteArray()
     }
 
     override fun write(byteArray: ByteArray, off: Int, len: Int) {
@@ -55,14 +69,6 @@ class UploadUrlConnection(task: IUploadTask, config: IUploadConnection.Configura
             outputStream = mConnection.getOutputStream()
         }
         if (!prefixWritten) {
-            val sb = StringBuffer()
-            sb.append(TWO_HYPHENS)
-            sb.append(BOUNDARY)
-            sb.append(END)
-            sb.append("Content-Disposition: form-data; name=\"${task.getFileBody()}\";filename=\"${task.getFileName()}\"$END")
-            sb.append("Content-Type: ${task.getMimeType()}$END")
-            sb.append(END)
-            val prefix = sb.toString().toByteArray()
             outputStream!!.write(prefix, 0, prefix.size)
             prefixWritten = true
         }
@@ -70,9 +76,7 @@ class UploadUrlConnection(task: IUploadTask, config: IUploadConnection.Configura
     }
 
     override fun flush() {
-        if (!suffixWritten) {
-            outputStream!!.write(END.toByteArray(), 0, END.toByteArray().size)
-            val suffix = (TWO_HYPHENS + BOUNDARY + TWO_HYPHENS + END).toByteArray()
+        if (!suffixWritten && task.getTotal() == task.getCurrent()) {
             outputStream!!.write(suffix, 0, suffix.size)
             suffixWritten = true
         }
@@ -84,6 +88,13 @@ class UploadUrlConnection(task: IUploadTask, config: IUploadConnection.Configura
     }
 
     override fun request(url: String) {
+        if (mConnection is HttpURLConnection) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                (mConnection as HttpURLConnection).setFixedLengthStreamingMode(prefix.size + task.getTotal() + suffix.size)
+            } else {
+                (mConnection as HttpURLConnection).setFixedLengthStreamingMode((prefix.size + task.getTotal() + suffix.size).toInt())
+            }
+        }
         mConnection.connect()
     }
 
@@ -126,7 +137,9 @@ class UploadUrlConnection(task: IUploadTask, config: IUploadConnection.Configura
     }
 
     override fun close() {
-        outputStream?.close()
+        if (mConnection is HttpURLConnection) {
+            (mConnection as HttpURLConnection).disconnect()
+        }
     }
 
 }

@@ -1,8 +1,8 @@
 package com.xybean.transfermanager.upload
 
 import android.util.SparseArray
-import com.xybean.transfermanager.id.IdGenerator
 import com.xybean.transfermanager.Logger
+import com.xybean.transfermanager.id.IdGenerator
 import com.xybean.transfermanager.upload.connection.IUploadConnection
 import com.xybean.transfermanager.upload.stream.IUploadStream
 import com.xybean.transfermanager.upload.task.IUploadTask
@@ -82,6 +82,7 @@ class UploadManager private constructor() {
                     .build()
 
             task.bindInternalListener(internalListener)
+            taskList.put(id, task)
             executor.execute(task)
 
             return task.getId()
