@@ -92,14 +92,23 @@ class UploadManager private constructor() {
     fun cancel(id: Int) {
         synchronized(taskList) {
             val task = taskList.get(id)
-            task?.cancel()
+            if (task != null) {
+                task.cancel()
+                taskList.remove(id)
+                Logger.i(TAG, "cancel and remove a Task(id = ${task.getId()}), TaskList's size is ${taskList.size()} now.")
+            }
         }
     }
 
     fun pause(id: Int) {
         synchronized(taskList) {
             val task = taskList.get(id)
-            task?.pause()
+            if (task != null) {
+                task.pause()
+                taskList.remove(id)
+                Logger.i(TAG, "pause and remove a Task(id = ${task.getId()}), " +
+                        "TaskList's size is ${taskList.size()} now.")
+            }
         }
     }
 

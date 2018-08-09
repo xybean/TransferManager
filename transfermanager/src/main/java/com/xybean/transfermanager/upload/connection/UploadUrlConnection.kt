@@ -90,9 +90,9 @@ class UploadUrlConnection(task: IUploadTask, config: IUploadConnection.Configura
     override fun request(url: String) {
         if (mConnection is HttpURLConnection) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                (mConnection as HttpURLConnection).setFixedLengthStreamingMode(prefix.size + task.getTotal() + suffix.size)
+                (mConnection as HttpURLConnection).setFixedLengthStreamingMode(prefix.size + task.getTotal() - task.getCurrent() + suffix.size)
             } else {
-                (mConnection as HttpURLConnection).setFixedLengthStreamingMode((prefix.size + task.getTotal() + suffix.size).toInt())
+                (mConnection as HttpURLConnection).setFixedLengthStreamingMode((prefix.size + task.getTotal() - task.getCurrent() + suffix.size).toInt())
             }
         }
         mConnection.connect()
