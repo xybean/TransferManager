@@ -5,31 +5,33 @@ import com.xybean.transfermanager.upload.UploadListener
 /**
  * Author @xybean on 2018/7/24.
  */
-interface IUploadTask {
+abstract class IUploadTask {
 
-    fun getUrl(): String
+    abstract fun getUrl(): String
 
-    fun getId(): Int
+    abstract fun getId(): Int
 
-    fun getStatus(): Int
+    abstract fun getStatus(): Int
 
-    fun getListener(): UploadListener?
+    abstract fun getListener(): UploadListener?
 
-    fun setListener(listener: UploadListener)
+    abstract fun setListener(listener: UploadListener)
 
-    fun getSourcePath(): String
+    abstract fun getSourcePath(): String
 
-    fun getFileName(): String
+    abstract fun getFileName(): String
 
-    fun getMimeType(): String
+    abstract fun getMimeType(): String
 
-    fun getFileBody(): String
+    abstract fun getFileBody(): String
 
-    fun getCurrent(): Long
+    abstract fun getCurrent(): Long
 
-    fun getTotal(): Long
+    abstract fun getTotal(): Long
 
-    fun getPriority(): Int
+    abstract fun getPriority(): Int
 
-    fun setPriority(priority: Int)
+    abstract fun setPriority(priority: Int)
+
+    abstract fun onUpdate(current: Long)
 }

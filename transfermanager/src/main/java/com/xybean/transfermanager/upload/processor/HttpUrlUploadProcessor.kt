@@ -1,6 +1,7 @@
-package com.xybean.transfermanager.upload.connection
+package com.xybean.transfermanager.upload.processor
 
 import android.os.Build
+import com.xybean.transfermanager.upload.provider.IFileProvider
 import com.xybean.transfermanager.upload.task.IUploadTask
 import java.io.BufferedReader
 import java.io.InputStream
@@ -11,37 +12,32 @@ import java.net.URL
 import java.net.URLConnection
 
 /**
- * Author @xybean on 2018/7/24.
+ * Author @xybean on 2018/8/9.
  */
-class UploadUrlConnection(task: IUploadTask, config: IUploadConnection.Configuration? = null)
-    : IUploadConnection(task, config) {
+class HttpUrlUploadProcessor(task: IUploadTask, fileProvider: IFileProvider) : IUploadProcessor(task, fileProvider) {
 
     companion object {
         private const val END = "\r\n"
         private const val TWO_HYPHENS = "--"
         private const val BOUNDARY = "*****"
+        private const val BUFFER_SIZE = 1024
     }
 
     private var mConnection: URLConnection
-    private var outputStream: OutputStream? = null
+    private var output: OutputStream? = null
+    private var input: InputStream? = null
 
     private val prefix: ByteArray
     private val suffix: ByteArray
-    private var prefixWritten = false
-    private var suffixWritten = false
+
+    @Volatile
+    private var canceled = false
+    @Volatile
+    private var paused = false
 
     init {
         val url = URL(task.getUrl())
         mConnection = url.openConnection()
-        if (config != null) {
-            if (config.getReadTimeOut() > 0) {
-                mConnection.readTimeout = config.getReadTimeOut()
-            }
-
-            if (config.getConnectTimeout() > 0) {
-                mConnection.connectTimeout = config.getConnectTimeout()
-            }
-        }
         // 设置允许输入
         mConnection.doInput = true
         // 设置允许输出
@@ -62,40 +58,50 @@ class UploadUrlConnection(task: IUploadTask, config: IUploadConnection.Configura
         sb.append(END)
         prefix = sb.toString().toByteArray()
         suffix = (END + TWO_HYPHENS + BOUNDARY + TWO_HYPHENS + END).toByteArray()
-    }
 
-    override fun write(byteArray: ByteArray, off: Int, len: Int) {
-        if (outputStream == null) {
-            outputStream = mConnection.getOutputStream()
+        if (mConnection is HttpURLConnection) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                (mConnection as HttpURLConnection).setFixedLengthStreamingMode(prefix.size + fileProvider.getLength() + suffix.size)
+            } else {
+                (mConnection as HttpURLConnection).setFixedLengthStreamingMode((prefix.size + fileProvider.getLength() + suffix.size).toInt())
+            }
         }
-        if (!prefixWritten) {
-            outputStream!!.write(prefix, 0, prefix.size)
-            prefixWritten = true
-        }
-        outputStream!!.write(byteArray, off, len)
-    }
-
-    override fun flush() {
-        if (!suffixWritten && task.getTotal() == task.getCurrent()) {
-            outputStream!!.write(suffix, 0, suffix.size)
-            suffixWritten = true
-        }
-        outputStream?.flush()
     }
 
     override fun addHeader(name: String, value: String) {
         mConnection.addRequestProperty(name, value)
     }
 
-    override fun request(url: String) {
-        if (mConnection is HttpURLConnection) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                (mConnection as HttpURLConnection).setFixedLengthStreamingMode(prefix.size + task.getTotal() - task.getCurrent() + suffix.size)
-            } else {
-                (mConnection as HttpURLConnection).setFixedLengthStreamingMode((prefix.size + task.getTotal() - task.getCurrent() + suffix.size).toInt())
+    @Throws(Exception::class)
+    override fun upload(url: String) {
+        mConnection.connect()
+        output = mConnection.getOutputStream()
+        // 写入boundary头
+        output!!.write(prefix, 0, prefix.size)
+
+        input = fileProvider.getInputStream()
+        var current = task.getCurrent()
+        val buffer = ByteArray(BUFFER_SIZE)
+        var count = input!!.read(buffer, 0, buffer.size)
+        while (count != -1 && !canceled && !paused) {
+            output!!.write(buffer, 0, count)
+            current += count
+            task.onUpdate(current)
+            count = input!!.read(buffer, 0, buffer.size)
+        }
+        when {
+            paused -> {
+                output!!.flush()
+            }
+            canceled -> {
+                output!!.flush()
+            }
+            else -> {
+                // 写入boundary尾
+                output!!.write(suffix, 0, suffix.size)
+                output!!.flush()
             }
         }
-        mConnection.connect()
     }
 
     override fun getResponseCode(): Int {
@@ -108,7 +114,7 @@ class UploadUrlConnection(task: IUploadTask, config: IUploadConnection.Configura
     override fun getResponse(): String {
         val code = getResponseCode()
         if (code >= 300) {
-            throw Exception("HTTP Request is not success, Response code is $code")
+            throw Exception("HTTP Request is failed, Response code is $code")
         }
         val resultBuffer = StringBuffer()
         if (code == HttpURLConnection.HTTP_OK) {
@@ -125,8 +131,6 @@ class UploadUrlConnection(task: IUploadTask, config: IUploadConnection.Configura
                     resultBuffer.append("\n")
                     tempLine = reader.readLine()
                 }
-            } catch (e: Exception) {
-                throw e
             } finally {
                 inputStream?.close()
                 inputStreamReader?.close()
@@ -136,10 +140,17 @@ class UploadUrlConnection(task: IUploadTask, config: IUploadConnection.Configura
         return resultBuffer.toString()
     }
 
+    override fun cancel() {
+        canceled = true
+    }
+
+    override fun pause() {
+        paused = true
+    }
+
     override fun close() {
-        if (mConnection is HttpURLConnection) {
-            (mConnection as HttpURLConnection).disconnect()
-        }
+        input?.close()
+        (mConnection as HttpURLConnection?)?.disconnect()
     }
 
 }

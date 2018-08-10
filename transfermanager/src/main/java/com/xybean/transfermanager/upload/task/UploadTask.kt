@@ -2,12 +2,11 @@ package com.xybean.transfermanager.upload.task
 
 import android.text.TextUtils
 import com.xybean.transfermanager.Logger
-import com.xybean.transfermanager.download.task.DownloadStatus
 import com.xybean.transfermanager.id.IdGenerator
 import com.xybean.transfermanager.upload.UploadConfig
 import com.xybean.transfermanager.upload.UploadListener
-import com.xybean.transfermanager.upload.connection.IUploadConnection
-import com.xybean.transfermanager.upload.stream.IUploadStream
+import com.xybean.transfermanager.upload.processor.IUploadProcessor
+import com.xybean.transfermanager.upload.provider.IFileProvider
 import java.io.File
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
@@ -15,19 +14,18 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * Author @xybean on 2018/7/24.
  */
-class UploadTask private constructor() : IUploadTask, Runnable, Comparable<UploadTask> {
+class UploadTask private constructor() : IUploadTask(), Runnable, Comparable<UploadTask> {
 
     private companion object {
         private const val TAG = "UploadTask"
-        private const val BUFFER_SIZE = 1024
         private const val DEFAULT_MIME_TYPE = "multipart/form-data; charset=utf-8"
         private const val DEFAULT_FILE_BODY = "file"
     }
 
     private lateinit var idGenerator: IdGenerator
+    private lateinit var fileProvider: IFileProvider
     private var internalListener: UploadInternalListener? = null
-    private lateinit var connection: IUploadConnection
-    private lateinit var uploadStream: IUploadStream
+    private lateinit var processor: IUploadProcessor
     private val headers: MutableMap<String, String> = HashMap()
 
     private var current: Long = 0
@@ -36,7 +34,7 @@ class UploadTask private constructor() : IUploadTask, Runnable, Comparable<Uploa
     private var fileName = ""
     private var url: String = ""
     private var listener: UploadListener? = null
-    private val status: AtomicInteger = AtomicInteger(DownloadStatus.WAIT)
+    private val status: AtomicInteger = AtomicInteger(UploadStatus.WAIT)
     private var id = -1
     private val priority = AtomicInteger(0)
     private var mimeType = DEFAULT_MIME_TYPE
@@ -47,55 +45,31 @@ class UploadTask private constructor() : IUploadTask, Runnable, Comparable<Uploa
     @Volatile
     private var paused = false
 
+    override fun onUpdate(current: Long) {
+        this.current = current
+        internalListener?.onUpdate(this)
+    }
+
     override fun run() {
         if (canceled || paused) {
             Logger.d(TAG, "UploadTask(id = $id) has been canceled or paused before start.")
             return
         }
-        status.set(UploadStatus.START)
-        Logger.i(TAG, "UploadTask(id = $id) start to upload file at $sourcePath")
-        internalListener?.onStart(this)
 
         try {
-            // 添加请求头
-            if (!headers.isEmpty()) {
-                for (key in headers.keys) {
-                    connection.addHeader(key, headers[key]!!)
-                }
+            total = fileProvider.getLength() + current
+            status.set(UploadStatus.START)
+            Logger.i(TAG, "UploadTask(id = $id) start to upload file at $sourcePath")
+            internalListener?.onStart(this)
+
+            for (name in headers.keys) {
+                processor.addHeader(name, headers[name]!!)
             }
 
-            val inputStream = uploadStream.getInputStream()
-            total = uploadStream.length()
-
-            connection.request(url)
-
-            // 写入文件流
-            val buffer = ByteArray(BUFFER_SIZE)
             status.set(UploadStatus.UPDATE)
-            var count = inputStream.read(buffer, 0, buffer.size)
-            while (count != -1 && !canceled && !paused) {
-                connection.write(buffer, 0, count)
-                current += count
-                internalListener?.onUpdate(this)
-                count = inputStream.read(buffer, 0, buffer.size)
-            }
-            when {
-                canceled -> {
-                    connection.flush()
-                    Logger.i(TAG, "UploadTask(id = $id) is canceled.")
-                    return
-                }
-                paused -> {
-                    connection.flush()
-                    status.set(UploadStatus.PAUSED)
-                    Logger.i(TAG, "UploadTask(id = $id) is paused.")
-                    return
-                }
-                else -> connection.flush()
-            }
-
-            val response = connection.getResponse()
-            if (!canceled) {
+            processor.upload(url)
+            if (!canceled && !paused) {
+                val response = processor.getResponse()
                 status.set(UploadStatus.SUCCEED)
                 internalListener?.onSucceed(this, response)
             }
@@ -104,10 +78,9 @@ class UploadTask private constructor() : IUploadTask, Runnable, Comparable<Uploa
             Logger.e(TAG, "Task(id = $id) is failed.", e)
             internalListener?.onFailed(this, e)
         } finally {
-            connection.close()
-            uploadStream.close()
+            fileProvider.close()
+            processor.close()
         }
-
     }
 
     override fun compareTo(other: UploadTask): Int {
@@ -116,10 +89,12 @@ class UploadTask private constructor() : IUploadTask, Runnable, Comparable<Uploa
 
     fun pause() {
         paused = true
+        processor.pause()
     }
 
     fun cancel() {
         canceled = true
+        processor.cancel()
     }
 
     internal fun bindInternalListener(listener: UploadInternalListener) {
@@ -195,8 +170,8 @@ class UploadTask private constructor() : IUploadTask, Runnable, Comparable<Uploa
     class Builder {
 
         private val task: UploadTask = UploadTask()
-        private lateinit var connectionFactory: IUploadConnection.Factory
-        private lateinit var streamFactory: IUploadStream.Factory
+        private lateinit var processorFactory: IUploadProcessor.Factory
+        private lateinit var fileFactory: IFileProvider.Factory
 
         fun url(url: String) = apply {
             task.url = url
@@ -211,11 +186,11 @@ class UploadTask private constructor() : IUploadTask, Runnable, Comparable<Uploa
         }
 
         fun config(config: UploadConfig) = apply {
-            if (config.connectionFactory != null) {
-                this@Builder.connectionFactory = config.connectionFactory!!
+            if (config.fileFactory != null) {
+                this@Builder.fileFactory = config.fileFactory!!
             }
-            if (config.streamFactory != null) {
-                this@Builder.streamFactory = config.streamFactory!!
+            if (config.processorFactory != null) {
+                this@Builder.processorFactory = config.processorFactory!!
             }
             if (!TextUtils.isEmpty(config.fileName)) {
                 task.fileName = config.fileName
@@ -238,8 +213,8 @@ class UploadTask private constructor() : IUploadTask, Runnable, Comparable<Uploa
         }
 
         fun build(): UploadTask {
-            task.connection = connectionFactory.createUploadConnection(task)
-            task.uploadStream = streamFactory.createUploadStream(task)
+            task.fileProvider = fileFactory.createFileProvider(task)
+            task.processor = processorFactory.createUploadProcessor(task, task.fileProvider)
             return task
         }
 

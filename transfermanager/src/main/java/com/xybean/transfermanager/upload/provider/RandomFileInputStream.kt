@@ -1,4 +1,4 @@
-package com.xybean.transfermanager.upload.stream
+package com.xybean.transfermanager.upload.provider
 
 import java.io.*
 

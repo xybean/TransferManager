@@ -3,8 +3,8 @@ package com.xybean.transfermanager.upload
 import android.util.SparseArray
 import com.xybean.transfermanager.Logger
 import com.xybean.transfermanager.id.IdGenerator
-import com.xybean.transfermanager.upload.connection.IUploadConnection
-import com.xybean.transfermanager.upload.stream.IUploadStream
+import com.xybean.transfermanager.upload.processor.IUploadProcessor
+import com.xybean.transfermanager.upload.provider.IFileProvider
 import com.xybean.transfermanager.upload.task.IUploadTask
 import com.xybean.transfermanager.upload.task.UploadInternalListener
 import com.xybean.transfermanager.upload.task.UploadTask
@@ -20,8 +20,8 @@ class UploadManager private constructor() {
     }
 
     private lateinit var executor: Executor
-    private lateinit var connectionFactory: IUploadConnection.Factory
-    private lateinit var streamFactory: IUploadStream.Factory
+    private lateinit var processorFactory: IUploadProcessor.Factory
+    private lateinit var fileFactory: IFileProvider.Factory
     private var idGenerator: IdGenerator? = null
 
     private val taskList: SparseArray<UploadTask> = SparseArray()
@@ -119,6 +119,7 @@ class UploadManager private constructor() {
     }
 
     fun updatePriority(id: Int, priority: Int) {
+        // todo 目前这个方法是无效的
         synchronized(taskList) {
             taskList.get(id)?.setPriority(priority)
         }
@@ -131,16 +132,16 @@ class UploadManager private constructor() {
                 throw IllegalArgumentException("you must set idGenerator by UploadManager.Builder.idGenerator() or UploadConfig.Builder.idGenerator()!")
             }
         }
-        if (config.connectionFactory == null) {
-            config.connectionFactory = connectionFactory
-            if (config.connectionFactory == null) {
-                throw IllegalArgumentException("you must set connectionFactory by UploadManager.Builder.connection() or UploadConfig.Builder.connection()!")
+        if (config.processorFactory == null) {
+            config.processorFactory = processorFactory
+            if (config.processorFactory == null) {
+                throw IllegalArgumentException("you must set processorFactory by UploadManager.Builder.processor() or UploadConfig.Builder.processor()!")
             }
         }
-        if (config.streamFactory == null) {
-            config.streamFactory = streamFactory
-            if (config.streamFactory == null) {
-                throw IllegalArgumentException("you must set streamFactory by UploadManager.Builder.stream() or UploadConfig.Builder.stream()!")
+        if (config.fileFactory == null) {
+            config.fileFactory = fileFactory
+            if (config.fileFactory == null) {
+                throw IllegalArgumentException("you must set fileFactory by UploadManager.Builder.file() or UploadConfig.Builder.file()!")
             }
         }
     }
@@ -153,12 +154,12 @@ class UploadManager private constructor() {
             manager.executor = executor
         }
 
-        fun connection(connectionFactory: IUploadConnection.Factory) = apply {
-            manager.connectionFactory = connectionFactory
+        fun processor(processorFactory: IUploadProcessor.Factory) = apply {
+            manager.processorFactory = processorFactory
         }
 
-        fun stream(streamFactory: IUploadStream.Factory) = apply {
-            manager.streamFactory = streamFactory
+        fun file(fileFactory: IFileProvider.Factory) = apply {
+            manager.fileFactory = fileFactory
         }
 
         fun idGenerator(idGenerator: IdGenerator) = apply {

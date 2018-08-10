@@ -1,16 +1,16 @@
 package com.xybean.transfermanager.upload
 
 import com.xybean.transfermanager.id.IdGenerator
-import com.xybean.transfermanager.upload.connection.IUploadConnection
-import com.xybean.transfermanager.upload.stream.IUploadStream
+import com.xybean.transfermanager.upload.processor.IUploadProcessor
+import com.xybean.transfermanager.upload.provider.IFileProvider
 
 /**
  * Author @xybean on 2018/7/27.
  */
 class UploadConfig {
 
-    internal var connectionFactory: IUploadConnection.Factory? = null
-    internal var streamFactory: IUploadStream.Factory? = null
+    internal var processorFactory: IUploadProcessor.Factory? = null
+    internal var fileFactory: IFileProvider.Factory? = null
     internal var idGenerator: IdGenerator? = null
     internal var offset = -1L
     internal var forceReload = false
@@ -24,12 +24,12 @@ class UploadConfig {
 
         private val config = UploadConfig()
 
-        fun connection(connection: IUploadConnection.Factory) = apply {
-            config.connectionFactory = connection
+        fun processor(processorFactory: IUploadProcessor.Factory) = apply {
+            config.processorFactory = processorFactory
         }
 
-        fun stream(stream: IUploadStream.Factory) = apply {
-            config.streamFactory = stream
+        fun file(fileFactory: IFileProvider.Factory) = apply {
+            config.fileFactory = fileFactory
         }
 
         fun idGenerator(idGenerator: IdGenerator) = apply {
