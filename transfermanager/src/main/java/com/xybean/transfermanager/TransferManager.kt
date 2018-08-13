@@ -2,17 +2,19 @@ package com.xybean.transfermanager
 
 import android.annotation.SuppressLint
 import android.content.Context
+import com.xybean.transfermanager.monitor.NetworkMonitor
 
 /**
  * Author @xybean on 2018/7/18.
  */
 @SuppressLint("StaticFieldLeak")
-object ApplicationHolder {
+object TransferManager {
 
     private var APP_CONTEXT: Context? = null
 
-    fun holdContext(context: Context) {
+    fun init(context: Context) {
         APP_CONTEXT = context
+        NetworkMonitor.init(context)
     }
 
     fun getAppContext(): Context {

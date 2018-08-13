@@ -3,6 +3,7 @@ package com.xybean.transfermanager.download
 import com.xybean.transfermanager.download.connection.IDownloadConnection
 import com.xybean.transfermanager.download.stream.IDownloadStream
 import com.xybean.transfermanager.id.IdGenerator
+import com.xybean.transfermanager.monitor.MonitorListener
 
 /**
  * Author @xybean on 2018/7/26.
@@ -17,6 +18,7 @@ class DownloadConfig {
     internal var total = -1L
     internal var forceReload = false
     internal var priority = 0
+    internal var monitor: MonitorListener? = null
 
     class Builder {
 
@@ -57,6 +59,10 @@ class DownloadConfig {
 
         fun addHeaders(headers: Map<String, String>) = apply {
             config.headers.putAll(headers)
+        }
+
+        fun monitor(monitorListener: MonitorListener) = apply {
+            config.monitor = monitorListener
         }
 
         fun build() = config

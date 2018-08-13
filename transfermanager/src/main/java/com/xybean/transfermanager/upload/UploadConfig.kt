@@ -1,6 +1,7 @@
 package com.xybean.transfermanager.upload
 
 import com.xybean.transfermanager.id.IdGenerator
+import com.xybean.transfermanager.monitor.MonitorListener
 import com.xybean.transfermanager.upload.processor.IUploadProcessor
 import com.xybean.transfermanager.upload.provider.IFileProvider
 
@@ -19,6 +20,7 @@ class UploadConfig {
     internal var fileBody = ""
     internal var mimeType = ""
     internal var priority = 0
+    internal var monitor: MonitorListener? = null
 
     class Builder {
 
@@ -62,6 +64,10 @@ class UploadConfig {
 
         fun addHeaders(headers: Map<String, String>) = apply {
             config.headers.putAll(headers)
+        }
+
+        fun monitor(monitorListener: MonitorListener) = apply {
+            config.monitor = monitorListener
         }
 
         fun build() = config

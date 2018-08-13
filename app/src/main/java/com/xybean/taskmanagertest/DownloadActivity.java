@@ -6,7 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.TextView;
 
-import com.xybean.transfermanager.ApplicationHolder;
+import com.xybean.transfermanager.TransferManager;
 import com.xybean.transfermanager.download.DownloadConfig;
 import com.xybean.transfermanager.download.DownloadListener;
 import com.xybean.transfermanager.download.DownloadManager;
@@ -41,7 +41,7 @@ public class DownloadActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_download);
 
-        ApplicationHolder.INSTANCE.holdContext(getApplicationContext());
+        TransferManager.INSTANCE.init(getApplicationContext());
 
         manager = new DownloadManager.Builder()
                 .cacheHandler(new SqliteCacheHandler())

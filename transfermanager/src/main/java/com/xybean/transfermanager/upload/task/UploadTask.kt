@@ -3,6 +3,8 @@ package com.xybean.transfermanager.upload.task
 import android.text.TextUtils
 import com.xybean.transfermanager.Logger
 import com.xybean.transfermanager.id.IdGenerator
+import com.xybean.transfermanager.monitor.MonitorListener
+import com.xybean.transfermanager.monitor.NetworkMonitor
 import com.xybean.transfermanager.upload.UploadConfig
 import com.xybean.transfermanager.upload.UploadListener
 import com.xybean.transfermanager.upload.processor.IUploadProcessor
@@ -25,6 +27,7 @@ class UploadTask private constructor() : IUploadTask(), Runnable, Comparable<Upl
     private lateinit var idGenerator: IdGenerator
     private lateinit var fileProvider: IFileProvider
     private var internalListener: UploadInternalListener? = null
+    private var monitorListener: MonitorListener? = null
     private lateinit var processor: IUploadProcessor
     private val headers: MutableMap<String, String> = HashMap()
 
@@ -40,6 +43,8 @@ class UploadTask private constructor() : IUploadTask(), Runnable, Comparable<Upl
     private var mimeType = DEFAULT_MIME_TYPE
     private var fileBody = DEFAULT_FILE_BODY
 
+    private lateinit var networkMonitor: NetworkMonitor
+
     @Volatile
     private var canceled = false
     @Volatile
@@ -47,6 +52,7 @@ class UploadTask private constructor() : IUploadTask(), Runnable, Comparable<Upl
 
     override fun onUpdate(current: Long) {
         this.current = current
+        networkMonitor.update(current)
         internalListener?.onUpdate(this)
     }
 
@@ -77,6 +83,7 @@ class UploadTask private constructor() : IUploadTask(), Runnable, Comparable<Upl
             status.set(UploadStatus.FAILED)
             Logger.e(TAG, "Task(id = $id) is failed.", e)
             internalListener?.onFailed(this, e)
+            monitorListener?.onFailed(e, networkMonitor.toString())
         } finally {
             fileProvider.close()
             processor.close()
@@ -106,7 +113,7 @@ class UploadTask private constructor() : IUploadTask(), Runnable, Comparable<Upl
     }
 
     override fun getId(): Int {
-        if (id < 0) {
+        if (id == -1) {
             id = idGenerator.getId()
         }
         return id
@@ -210,11 +217,15 @@ class UploadTask private constructor() : IUploadTask(), Runnable, Comparable<Upl
             if (config.idGenerator != null) {
                 task.idGenerator = config.idGenerator!!
             }
+            if (config.monitor != null) {
+                task.monitorListener = config.monitor
+            }
         }
 
         fun build(): UploadTask {
             task.fileProvider = fileFactory.createFileProvider(task)
             task.processor = processorFactory.createUploadProcessor(task, task.fileProvider)
+            task.networkMonitor = NetworkMonitor(task.getId(), NetworkMonitor.TYPE_UPSTREAM)
             return task
         }
 

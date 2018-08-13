@@ -10,6 +10,7 @@ import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLConnection
+import java.util.*
 
 /**
  * Author @xybean on 2018/8/9.
@@ -19,7 +20,7 @@ class HttpUrlUploadProcessor(task: IUploadTask, fileProvider: IFileProvider) : I
     companion object {
         private const val END = "\r\n"
         private const val TWO_HYPHENS = "--"
-        private const val BOUNDARY = "*****"
+        private val BOUNDARY = UUID.randomUUID().toString()
         private const val BUFFER_SIZE = 1024
     }
 

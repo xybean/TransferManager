@@ -3,7 +3,7 @@ package com.xybean.transfermanager.download.cache
 import android.content.ContentValues
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
-import com.xybean.transfermanager.ApplicationHolder
+import com.xybean.transfermanager.TransferManager
 import com.xybean.transfermanager.download.task.DownloadStatus
 
 /**
@@ -17,7 +17,7 @@ class SqliteCacheHandler : DownloadCacheHandler {
 
     init {
         val openHelper = SqliteDatabaseOpenHelper(
-                ApplicationHolder.getAppContext())
+                TransferManager.getAppContext())
         db = openHelper.writableDatabase
     }
 

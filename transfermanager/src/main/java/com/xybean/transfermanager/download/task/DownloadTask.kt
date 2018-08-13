@@ -9,6 +9,8 @@ import com.xybean.transfermanager.download.connection.IDownloadConnection
 import com.xybean.transfermanager.download.stream.IDownloadStream
 import com.xybean.transfermanager.exception.NoEnoughSpaceException
 import com.xybean.transfermanager.id.IdGenerator
+import com.xybean.transfermanager.monitor.MonitorListener
+import com.xybean.transfermanager.monitor.NetworkMonitor
 import java.io.File
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
@@ -31,6 +33,7 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable, Com
 
     private lateinit var idGenerator: IdGenerator
     private var internalListener: DownloadInternalListener? = null
+    private var monitorListener: MonitorListener? = null
     private lateinit var connection: IDownloadConnection
     private lateinit var outputStream: IDownloadStream
     private val headers: MutableMap<String, String> = HashMap()
@@ -44,6 +47,8 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable, Com
     private val status: AtomicInteger = AtomicInteger(DownloadStatus.WAIT)
     private var id = -1
     private val priority = AtomicInteger(0)
+
+    private lateinit var networkMonitor: NetworkMonitor
 
     @Volatile
     private var canceled = false
@@ -114,6 +119,7 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable, Com
             while (count != -1 && !canceled && !paused) {
                 out.write(buffer, 0, count)
                 current += count.toLong()
+                networkMonitor.update(current)
                 // 更新数据库
                 val now = SystemClock.elapsedRealtime()
                 val bytesDelta = current - lastSyncBytes
@@ -154,6 +160,7 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable, Com
             status.set(DownloadStatus.FAILED)
             Logger.e(TAG, "Task(id = $id) is failed.", e)
             internalListener?.onFailed(this, e)
+            monitorListener?.onFailed(e, networkMonitor.toString())
         } finally {
             connection.close()
             outputStream.close()
@@ -170,7 +177,7 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable, Com
     }
 
     override fun getId(): Int {
-        if (id < 0) {
+        if (id == -1) {
             id = idGenerator.getId()
         }
         return id
@@ -277,12 +284,16 @@ internal class DownloadTask private constructor() : IDownloadTask, Runnable, Com
             if (config.idGenerator != null) {
                 task.idGenerator = config.idGenerator!!
             }
+            if (config.monitor != null) {
+                task.monitorListener = config.monitor
+            }
             task.priority.set(config.priority)
         }
 
         fun build(): DownloadTask {
             task.connection = connectionFactory.createConnection(task)
             task.outputStream = streamFactory.createDownloadStream(task)
+            task.networkMonitor = NetworkMonitor(task.getId(), NetworkMonitor.TYPE_DOWNSTREAM)
             return task
         }
 
