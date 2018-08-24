@@ -14,6 +14,12 @@ internal object Logger {
         }
     }
 
+    fun w(tag: String, msg: String, tr: Throwable) {
+        if (DEBUG) {
+            Log.w(tag, msg, tr)
+        }
+    }
+
     fun e(tag: String, msg: String, tr: Throwable) {
         if (DEBUG) {
             Log.e(tag, msg, tr)

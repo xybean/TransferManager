@@ -3,6 +3,7 @@ package com.xybean.transfermanager.monitor
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkInfo
+import android.text.TextUtils
 import com.xybean.transfermanager.Logger
 import java.util.concurrent.atomic.AtomicReference
 
@@ -81,14 +82,30 @@ internal class NetworkMonitor(private val taskId: Int, private val type: Int) {
     override fun toString(): String {
         val list = speeds.toList()
         val speedsString = StringBuilder("[")
-        for (speed in list) {
-            speedsString.append("${speed}kb/s, ")
+        list.forEachIndexed { index, speed ->
+            if (index != list.lastIndex) {
+                speedsString.append("${speed}kb/s, ")
+            } else {
+                speedsString.append("${speed}kb/s")
+            }
         }
         speedsString.append("]")
 
-        return "[TaskId: $taskId]\n" +
-                "[Speed:{type: $type, speed: $speedsString}]\n" +
-                "[NetInfo: ${getNetInfo()?.toString()}]"
+        val netInfo = getNetInfo()?.toString()
+
+        return "{" +
+                toJsonMap("TaskId", taskId.toString()) + ", " +
+                toJsonMap("Speed", "type: $type, speed: $speedsString") + ", " +
+                toJsonMap("NetInfo", if (TextUtils.isEmpty(netInfo)) {
+                    ""
+                } else {
+                    netInfo!!
+                }) +
+                "}"
+    }
+
+    private fun toJsonMap(key: String, value: String): String {
+        return "\"${key.replace("\"", "")}\" : \"${value.replace("\"", "")}\""
     }
 
 }

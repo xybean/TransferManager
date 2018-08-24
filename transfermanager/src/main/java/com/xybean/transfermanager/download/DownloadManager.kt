@@ -13,6 +13,7 @@ import com.xybean.transfermanager.download.task.IDownloadTask
 import com.xybean.transfermanager.executor.BaseTask
 import com.xybean.transfermanager.executor.TaskExecutor
 import com.xybean.transfermanager.id.IdGenerator
+import com.xybean.transfermanager.monitor.MonitorListener
 import java.util.concurrent.Executor
 
 /**
@@ -31,6 +32,7 @@ class DownloadManager private constructor() {
     private var connectionFactory: IDownloadConnection.Factory? = null
     private var streamFactory: IDownloadStream.Factory? = null
     private var idGenerator: IdGenerator? = null
+    private var monitorListener: MonitorListener? = null
 
     private val taskList: SparseArray<DownloadTask> = SparseArray()
 
@@ -257,6 +259,9 @@ class DownloadManager private constructor() {
                 throw IllegalArgumentException("you must set streamFactory by DownloadManager.Builder.stream() or DownloadConfig.Builder.stream()!")
             }
         }
+        if (config.monitor == null) {
+            config.monitor = monitorListener
+        }
     }
 
     class Builder {
@@ -285,6 +290,10 @@ class DownloadManager private constructor() {
 
         fun debug(debug: Boolean) = apply {
             Logger.DEBUG = debug
+        }
+
+        fun monitor(monitorListener: MonitorListener) = apply {
+            manager.monitorListener = monitorListener
         }
 
         fun build() = manager

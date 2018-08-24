@@ -3,6 +3,7 @@ package com.xybean.transfermanager.upload
 import android.util.SparseArray
 import com.xybean.transfermanager.Logger
 import com.xybean.transfermanager.id.IdGenerator
+import com.xybean.transfermanager.monitor.MonitorListener
 import com.xybean.transfermanager.upload.processor.IUploadProcessor
 import com.xybean.transfermanager.upload.provider.IFileProvider
 import com.xybean.transfermanager.upload.task.IUploadTask
@@ -23,6 +24,7 @@ class UploadManager private constructor() {
     private lateinit var processorFactory: IUploadProcessor.Factory
     private lateinit var fileFactory: IFileProvider.Factory
     private var idGenerator: IdGenerator? = null
+    private var monitorListener: MonitorListener? = null
 
     private val taskList: SparseArray<UploadTask> = SparseArray()
 
@@ -144,6 +146,9 @@ class UploadManager private constructor() {
                 throw IllegalArgumentException("you must set fileFactory by UploadManager.Builder.file() or UploadConfig.Builder.file()!")
             }
         }
+        if (config.monitor == null) {
+            config.monitor = monitorListener
+        }
     }
 
     class Builder {
@@ -168,6 +173,10 @@ class UploadManager private constructor() {
 
         fun debug(debug: Boolean) = apply {
             Logger.DEBUG = debug
+        }
+
+        fun monitor(monitorListener: MonitorListener) = apply {
+            manager.monitorListener = monitorListener
         }
 
         fun build() = manager

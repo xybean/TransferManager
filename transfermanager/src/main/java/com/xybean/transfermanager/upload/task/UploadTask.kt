@@ -24,11 +24,12 @@ class UploadTask private constructor() : IUploadTask(), Runnable, Comparable<Upl
         private const val DEFAULT_FILE_BODY = "file"
     }
 
+    private var processor: IUploadProcessor? = null
     private lateinit var idGenerator: IdGenerator
-    private lateinit var fileProvider: IFileProvider
+    private lateinit var processorFactory: IUploadProcessor.Factory
+    private lateinit var fileFactory: IFileProvider.Factory
     private var internalListener: UploadInternalListener? = null
     private var monitorListener: MonitorListener? = null
-    private lateinit var processor: IUploadProcessor
     private val headers: MutableMap<String, String> = HashMap()
 
     private var current: Long = 0
@@ -61,21 +62,24 @@ class UploadTask private constructor() : IUploadTask(), Runnable, Comparable<Upl
             Logger.d(TAG, "UploadTask(id = $id) has been canceled or paused before start.")
             return
         }
-
+        var fileProvider: IFileProvider? = null
         try {
+            fileProvider = fileFactory.createFileProvider(this)
+            processor = processorFactory.createUploadProcessor(this, fileProvider)
+
             total = fileProvider.getLength() + current
             status.set(UploadStatus.START)
             Logger.i(TAG, "UploadTask(id = $id) start to upload file at $sourcePath")
             internalListener?.onStart(this)
 
             for (name in headers.keys) {
-                processor.addHeader(name, headers[name]!!)
+                processor!!.addHeader(name, headers[name]!!)
             }
 
             status.set(UploadStatus.UPDATE)
-            processor.upload(url)
+            processor!!.upload(url)
             if (!canceled && !paused) {
-                val response = processor.getResponse()
+                val response = processor!!.getResponse()
                 status.set(UploadStatus.SUCCEED)
                 internalListener?.onSucceed(this, response)
             }
@@ -85,8 +89,8 @@ class UploadTask private constructor() : IUploadTask(), Runnable, Comparable<Upl
             internalListener?.onFailed(this, e)
             monitorListener?.onFailed(e, networkMonitor.toString())
         } finally {
-            fileProvider.close()
-            processor.close()
+            fileProvider?.close()
+            processor?.close()
         }
     }
 
@@ -96,12 +100,12 @@ class UploadTask private constructor() : IUploadTask(), Runnable, Comparable<Upl
 
     fun pause() {
         paused = true
-        processor.pause()
+        processor?.pause()
     }
 
     fun cancel() {
         canceled = true
-        processor.cancel()
+        processor?.cancel()
     }
 
     internal fun bindInternalListener(listener: UploadInternalListener) {
@@ -223,8 +227,8 @@ class UploadTask private constructor() : IUploadTask(), Runnable, Comparable<Upl
         }
 
         fun build(): UploadTask {
-            task.fileProvider = fileFactory.createFileProvider(task)
-            task.processor = processorFactory.createUploadProcessor(task, task.fileProvider)
+            task.fileFactory = fileFactory
+            task.processorFactory = processorFactory
             task.networkMonitor = NetworkMonitor(task.getId(), NetworkMonitor.TYPE_UPSTREAM)
             return task
         }
